@@ -38,13 +38,20 @@ export interface VoiceInput {
 export const memoryService = {
   // Persistent Knowledge methods
   async storePersistentKnowledge(content: string, type: string = 'general', tags: string[] = []): Promise<PersistentKnowledge | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error('No authenticated user');
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('persistent_knowledge')
       .insert({
         content,
         type,
         related_tags: tags,
-        priority_level: 1
+        priority_level: 1,
+        user_id: user.id
       })
       .select()
       .single();
@@ -57,9 +64,13 @@ export const memoryService = {
   },
 
   async searchKnowledge(query: string, tags?: string[]): Promise<PersistentKnowledge[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
     let queryBuilder = supabase
       .from('persistent_knowledge')
       .select('*')
+      .eq('user_id', user.id)
       .textSearch('content', query);
 
     if (tags && tags.length > 0) {
@@ -79,23 +90,44 @@ export const memoryService = {
   },
 
   async updateKnowledgePriority(id: string): Promise<void> {
-    await supabase
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Get current priority level and increment it
+    const { data: currentKnowledge } = await supabase
       .from('persistent_knowledge')
-      .update({ 
-        last_used_at: new Date().toISOString(),
-        priority_level: supabase.rpc('increment_priority', { knowledge_id: id })
-      })
-      .eq('id', id);
+      .select('priority_level')
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .single();
+
+    if (currentKnowledge) {
+      await supabase
+        .from('persistent_knowledge')
+        .update({ 
+          last_used_at: new Date().toISOString(),
+          priority_level: currentKnowledge.priority_level + 1
+        })
+        .eq('id', id)
+        .eq('user_id', user.id);
+    }
   },
 
   // Memory methods
   async storeMemory(inputText: string, responseText?: string, contextTags: string[] = []): Promise<Memory | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error('No authenticated user');
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('memory')
       .insert({
         input_text: inputText,
         response_text: responseText,
-        context_tags: contextTags
+        context_tags: contextTags,
+        user_id: user.id
       })
       .select()
       .single();
@@ -108,9 +140,13 @@ export const memoryService = {
   },
 
   async getRecentMemories(limit: number = 10): Promise<Memory[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
     const { data, error } = await supabase
       .from('memory')
       .select('*')
+      .eq('user_id', user.id)
       .order('timestamp', { ascending: false })
       .limit(limit);
 
@@ -122,9 +158,13 @@ export const memoryService = {
   },
 
   async searchMemories(query: string, contextTags?: string[]): Promise<Memory[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
     let queryBuilder = supabase
       .from('memory')
       .select('*')
+      .eq('user_id', user.id)
       .textSearch('input_text', query);
 
     if (contextTags && contextTags.length > 0) {
@@ -144,12 +184,19 @@ export const memoryService = {
 
   // Voice Input methods
   async storeVoiceInput(transcriptText: string, audioUrl?: string, intentTag?: string): Promise<VoiceInput | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error('No authenticated user');
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('voice_inputs')
       .insert({
         transcript_text: transcriptText,
         audio_url: audioUrl,
-        intent_tag: intentTag
+        intent_tag: intentTag,
+        user_id: user.id
       })
       .select()
       .single();
@@ -162,9 +209,13 @@ export const memoryService = {
   },
 
   async getVoiceInputs(limit: number = 20): Promise<VoiceInput[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
     const { data, error } = await supabase
       .from('voice_inputs')
       .select('*')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(limit);
 

@@ -15,9 +15,18 @@ export interface CalendarEvent {
 
 export const calendarService = {
   async createEvent(event: Omit<CalendarEvent, 'id' | 'user_id' | 'created_at'>): Promise<CalendarEvent | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error('No authenticated user');
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('events')
-      .insert(event)
+      .insert({
+        ...event,
+        user_id: user.id
+      })
       .select()
       .single();
 
@@ -29,9 +38,13 @@ export const calendarService = {
   },
 
   async getEvents(startDate?: string, endDate?: string): Promise<CalendarEvent[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
     let query = supabase
       .from('events')
       .select('*')
+      .eq('user_id', user.id)
       .order('start_time', { ascending: true });
 
     if (startDate) {
@@ -51,10 +64,14 @@ export const calendarService = {
   },
 
   async updateEvent(id: string, updates: Partial<CalendarEvent>): Promise<CalendarEvent | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
     const { data, error } = await supabase
       .from('events')
       .update(updates)
       .eq('id', id)
+      .eq('user_id', user.id)
       .select()
       .single();
 
@@ -66,10 +83,14 @@ export const calendarService = {
   },
 
   async deleteEvent(id: string): Promise<boolean> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
     const { error } = await supabase
       .from('events')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', user.id);
 
     if (error) {
       console.error('Error deleting event:', error);
@@ -79,10 +100,14 @@ export const calendarService = {
   },
 
   async getUpcomingEvents(limit: number = 10): Promise<CalendarEvent[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
     const now = new Date().toISOString();
     const { data, error } = await supabase
       .from('events')
       .select('*')
+      .eq('user_id', user.id)
       .gte('start_time', now)
       .order('start_time', { ascending: true })
       .limit(limit);

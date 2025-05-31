@@ -24,9 +24,18 @@ export interface Habit {
 export const goalService = {
   // Goal methods
   async createGoal(goal: Omit<Goal, 'id' | 'user_id' | 'created_at'>): Promise<Goal | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error('No authenticated user');
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('goals')
-      .insert(goal)
+      .insert({
+        ...goal,
+        user_id: user.id
+      })
       .select()
       .single();
 
@@ -38,9 +47,13 @@ export const goalService = {
   },
 
   async getGoals(): Promise<Goal[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
     const { data, error } = await supabase
       .from('goals')
       .select('*')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -51,10 +64,14 @@ export const goalService = {
   },
 
   async updateGoalProgress(id: string, progress: number): Promise<Goal | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
     const { data, error } = await supabase
       .from('goals')
       .update({ progress })
       .eq('id', id)
+      .eq('user_id', user.id)
       .select()
       .single();
 
@@ -67,9 +84,18 @@ export const goalService = {
 
   // Habit methods
   async createHabit(habitName: string): Promise<Habit | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error('No authenticated user');
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('habits')
-      .insert({ habit_name: habitName })
+      .insert({ 
+        habit_name: habitName,
+        user_id: user.id
+      })
       .select()
       .single();
 
@@ -81,9 +107,13 @@ export const goalService = {
   },
 
   async getHabits(): Promise<Habit[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
     const { data, error } = await supabase
       .from('habits')
       .select('*')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -94,6 +124,9 @@ export const goalService = {
   },
 
   async logHabit(id: string): Promise<Habit | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
     const today = new Date().toISOString().split('T')[0];
     
     // Get current habit to check streak
@@ -101,6 +134,7 @@ export const goalService = {
       .from('habits')
       .select('*')
       .eq('id', id)
+      .eq('user_id', user.id)
       .single();
 
     if (!currentHabit) return null;
@@ -123,6 +157,7 @@ export const goalService = {
         streak_count: newStreakCount
       })
       .eq('id', id)
+      .eq('user_id', user.id)
       .select()
       .single();
 
