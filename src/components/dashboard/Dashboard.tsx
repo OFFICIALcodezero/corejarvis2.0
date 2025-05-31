@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -37,6 +37,7 @@ interface Profile {
 
 const Dashboard: React.FC = () => {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState<string>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
@@ -89,6 +90,10 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const handleChatNavigation = () => {
+    navigate('/interface');
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -101,7 +106,7 @@ const Dashboard: React.FC = () => {
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'chat', label: 'Chat', icon: FileText },
+    { id: 'chat', label: 'Chat', icon: FileText, onClick: handleChatNavigation },
     { id: 'files', label: 'Files', icon: Files },
     { id: 'notes', label: 'Notes', icon: FileText },
     { id: 'tasks', label: 'Tasks', icon: FileText },
@@ -200,7 +205,7 @@ const Dashboard: React.FC = () => {
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <Button 
-                    onClick={() => setActiveSection('chat')}
+                    onClick={handleChatNavigation}
                     className="bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30"
                   >
                     Start Chat
@@ -256,7 +261,7 @@ const Dashboard: React.FC = () => {
                 return (
                   <Button
                     key={item.id}
-                    onClick={() => setActiveSection(item.id)}
+                    onClick={() => item.onClick ? item.onClick() : setActiveSection(item.id)}
                     variant={activeSection === item.id ? "secondary" : "ghost"}
                     className={`w-full justify-start text-left ${
                       activeSection === item.id 
