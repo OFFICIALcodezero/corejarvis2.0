@@ -28,7 +28,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const [visualFeedback, setVisualFeedback] = useState<'idle' | 'listening' | 'speaking'>('idle');
   const [dotCount, setDotCount] = useState(1);
   
-  // Create visual feedback for voice recognition
+  // Create visual feedback for voice recognition only when manually activated
   useEffect(() => {
     let interval: number;
     

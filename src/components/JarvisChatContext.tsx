@@ -1,9 +1,12 @@
+
 import React, { createContext, useState, useContext, useRef, useEffect } from "react";
 import { Message, MessageSuggestion, JarvisChatProps } from "@/types/chat";
 import { generateAssistantResponse, synthesizeSpeech } from "@/services/aiAssistantService";
 import { getVoiceId } from "@/utils/apiKeyManager";
 import { processSkillCommand, isSkillCommand } from "@/services/skillsService";
 import { saveToHistory } from "@/services/chatHistoryService";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "./ui/use-toast";
 
 interface JarvisChatContextType {
@@ -27,6 +30,7 @@ interface JarvisChatContextType {
   setInputMode: (mode: 'voice' | 'text') => void;
   showDashboard?: boolean;
   hackerModeActive?: boolean;
+  loadChatHistory: () => Promise<void>;
 }
 
 const JarvisChatContext = createContext<JarvisChatContextType | undefined>(undefined);
@@ -43,6 +47,7 @@ export const JarvisChatProvider: React.FC<React.PropsWithChildren<JarvisChatProp
   onMessageCheck,
   hackerModeActive
 }) => {
+  const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [suggestions, setSuggestions] = useState<MessageSuggestion[]>([]);
@@ -51,10 +56,85 @@ export const JarvisChatProvider: React.FC<React.PropsWithChildren<JarvisChatProp
   const [isImageOpen, setIsImageOpen] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [sessionId] = useState(() => crypto.randomUUID());
+
+  // Load chat history when component mounts
+  useEffect(() => {
+    if (user) {
+      loadChatHistory();
+    }
+  }, [user]);
+
+  const loadChatHistory = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('timestamp', { ascending: true })
+        .limit(50);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const loadedMessages: Message[] = data.map((msg) => ({
+          id: msg.id,
+          content: msg.content,
+          role: msg.role as 'user' | 'assistant',
+          timestamp: new Date(msg.timestamp),
+        }));
+        setMessages(loadedMessages);
+      } else {
+        // Initialize with welcome message if no history
+        setMessages([
+          {
+            id: "welcome-message",
+            content: "Hello! I'm JARVIS, your AI assistant. How can I help you today?",
+            role: "assistant",
+            timestamp: new Date(),
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error('Error loading chat history:', error);
+      // Initialize with welcome message on error
+      setMessages([
+        {
+          id: "welcome-message",
+          content: "Hello! I'm JARVIS, your AI assistant. How can I help you today?",
+          role: "assistant",
+          timestamp: new Date(),
+        },
+      ]);
+    }
+  };
+
+  const saveChatMessage = async (message: Message) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('chat_messages')
+        .insert([
+          {
+            user_id: user.id,
+            content: message.content,
+            role: message.role,
+            session_id: sessionId,
+          }
+        ]);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error saving chat message:', error);
+    }
+  };
 
   useEffect(() => {
-    // Initialize with welcome message
-    if (messages.length === 0) {
+    // Initialize with welcome message only if no messages and no user
+    if (messages.length === 0 && !user) {
       setMessages([
         {
           id: "welcome-message",
@@ -80,7 +160,7 @@ export const JarvisChatProvider: React.FC<React.PropsWithChildren<JarvisChatProp
         },
       ]);
     }
-  }, [messages.length]);
+  }, [messages.length, user]);
 
   useEffect(() => {
     // Update parent speaking state
@@ -142,6 +222,9 @@ export const JarvisChatProvider: React.FC<React.PropsWithChildren<JarvisChatProp
     };
 
     setMessages((prevMessages) => [...prevMessages, newMessage]);
+    
+    // Save user message to Supabase
+    await saveChatMessage(newMessage);
 
     try {
       let response: Message;
@@ -202,6 +285,9 @@ export const JarvisChatProvider: React.FC<React.PropsWithChildren<JarvisChatProp
 
       const updatedMessages = [...messages, newMessage, response];
       setMessages(updatedMessages);
+      
+      // Save assistant response to Supabase
+      await saveChatMessage(response);
       
       // Save conversation to history
       saveToHistory(updatedMessages);
@@ -272,7 +358,8 @@ export const JarvisChatProvider: React.FC<React.PropsWithChildren<JarvisChatProp
         inputMode,
         setInputMode,
         showDashboard,
-        hackerModeActive
+        hackerModeActive,
+        loadChatHistory
       }}
     >
       {children}
