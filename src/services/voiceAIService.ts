@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { memoryService } from './memoryService';
 
@@ -11,15 +10,24 @@ export class VoiceAIService {
   private onStatusCallback?: (status: 'listening' | 'idle' | 'processing') => void;
 
   constructor() {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      this.recognition = new SpeechRecognition();
-      this.setupRecognition();
-    }
-
     if ('speechSynthesis' in window) {
       this.synthesis = window.speechSynthesis;
     }
+  }
+
+  private initializeRecognition() {
+    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      return false;
+    }
+
+    if (this.recognition) {
+      return true; // Already initialized
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    this.recognition = new SpeechRecognition();
+    this.setupRecognition();
+    return true;
   }
 
   private setupRecognition() {
@@ -69,18 +77,13 @@ export class VoiceAIService {
     try {
       this.onStatusCallback?.('processing');
       
-      // Detect intent
       const intent = this.detectIntent(transcript);
-      
-      // Store voice input in database
       await memoryService.storeVoiceInput(transcript, undefined, intent);
       
-      // Check for learning triggers (handled by database trigger)
       if (this.isLearningTrigger(transcript)) {
         console.log('Learning trigger detected, storing in persistent knowledge');
       }
       
-      // Store in memory log
       await memoryService.storeMemory(transcript, undefined, [intent]);
       
     } catch (error) {
@@ -127,14 +130,22 @@ export class VoiceAIService {
   }
 
   public startListening(onTranscript?: (text: string) => void, onStatus?: (status: 'listening' | 'idle' | 'processing') => void) {
-    if (this.micActive || !this.recognition) return;
+    if (this.micActive) {
+      console.log('Microphone already active, ignoring start request');
+      return;
+    }
+    
+    if (!this.initializeRecognition()) {
+      console.error('Speech recognition not supported');
+      return;
+    }
     
     this.micActive = true;
     this.onTranscriptCallback = onTranscript;
     this.onStatusCallback = onStatus;
     
     try {
-      this.recognition.start();
+      this.recognition!.start();
     } catch (error) {
       console.error('Error starting recognition:', error);
       this.micActive = false;
@@ -168,7 +179,7 @@ export class VoiceAIService {
   }
 
   public isSupported(): boolean {
-    return !!(this.recognition && this.synthesis);
+    return !!(('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) && this.synthesis);
   }
 
   public isActive(): boolean {

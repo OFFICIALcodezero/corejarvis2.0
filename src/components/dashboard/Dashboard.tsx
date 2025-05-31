@@ -1,362 +1,197 @@
-
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { 
-  Home, 
-  Files, 
-  FileText, 
-  Terminal, 
-  LogOut,
-  ChevronDown,
-  ChevronRight,
-  User,
-  Brain,
-  Calendar,
-  Target,
-  Mic,
-  Code,
-  Heart,
-  TrendingUp
-} from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import ChatInterface from './ChatInterface';
-import NotesManager from './NotesManager';
-import TaskManager from './TaskManager';
-import FileManager from './FileManager';
-import ConsoleInterface from './ConsoleInterface';
-import ProfilePage from './ProfilePage';
-import MemoryPanel from '@/components/memory/MemoryPanel';
-import VoiceAIPanel from '@/components/voice/VoiceAIPanel';
-
-interface ActivityLog {
-  id: string;
-  activity: string;
-  timestamp: string;
-}
-
-interface Profile {
-  id: string;
-  email: string;
-  created_at: string;
-}
+import React, { useEffect, useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { Card } from "../ui/card";
+import NeuralNetworkPanel from "../ai/NeuralNetworkPanel";
+import { toast } from '@/components/ui/sonner';
+import { Button } from "../ui/button";
+import VoiceAIPanel from "../voice/VoiceAIPanel";
+import { MemoryPanel } from "../memory/MemoryPanel";
 
 const Dashboard: React.FC = () => {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState<string>('dashboard');
-  const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
-  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [activeSystems, setActiveSystems] = useState({
+    neural: true,
+    quantum: false,
+    conscious: false,
+    legion: false
+  });
 
   useEffect(() => {
-    if (user) {
-      fetchProfile();
-      fetchActivityLogs();
-    }
-  }, [user]);
+    // Initial dashboard loaded notification
+    toast("Neural Network Activated", {
+      description: "Advanced AI learning systems are now online. Click 'Activate Voice AI' to enable voice commands.",
+    });
+  }, []);
 
-  const fetchProfile = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user?.id)
-        .single();
+  const handleActivateSystem = (system: string) => {
+    setActiveSystems(prev => ({
+      ...prev,
+      [system]: true
+    }));
 
-      if (error) throw error;
-      setProfile(data);
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    }
-  };
-
-  const fetchActivityLogs = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('activity_logs')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('timestamp', { ascending: false })
-        .limit(5);
-
-      if (error) throw error;
-      setActivityLogs(data || []);
-    } catch (error) {
-      console.error('Error fetching activity logs:', error);
-    }
-  };
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      toast.success('Signed out successfully');
-    } catch (error) {
-      toast.error('Error signing out');
-    }
-  };
-
-  const handleChatNavigation = () => {
-    navigate('/interface');
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    toast(`${system.charAt(0).toUpperCase() + system.slice(1)} System Activated`, {
+      description: "New AI capabilities are now online."
     });
   };
 
-  const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'chat', label: 'Chat', icon: FileText, onClick: handleChatNavigation },
-    { id: 'memory', label: 'Memory System', icon: Brain },
-    { id: 'voice', label: 'Voice AI', icon: Mic },
-    { id: 'calendar', label: 'Calendar', icon: Calendar },
-    { id: 'goals', label: 'Goals & Habits', icon: Target },
-    { id: 'code', label: 'Code Assistant', icon: Code },
-    { id: 'mood', label: 'Mood Tracker', icon: Heart },
-    { id: 'files', label: 'Files', icon: Files },
-    { id: 'notes', label: 'Notes', icon: FileText },
-    { id: 'tasks', label: 'Tasks', icon: FileText },
-    { id: 'console', label: 'Console', icon: Terminal },
-    { id: 'profile', label: 'Profile', icon: User }
-  ];
-
-  const renderContent = () => {
-    switch (activeSection) {
-      case 'chat':
-        return <ChatInterface />;
-      case 'memory':
-        return (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-blue-400">Memory System</h2>
-            <MemoryPanel />
-          </div>
-        );
-      case 'voice':
-        return (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-blue-400">Voice AI System</h2>
-            <VoiceAIPanel />
-          </div>
-        );
-      case 'files':
-        return <FileManager />;
-      case 'notes':
-        return <NotesManager />;
-      case 'tasks':
-        return <TaskManager />;
-      case 'console':
-        return <ConsoleInterface />;
-      case 'profile':
-        return <ProfilePage />;
-      default:
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h1 className="text-4xl font-bold text-blue-400 mb-2 animate-pulse">
-                Welcome to JARVIS 2.0
-              </h1>
-              <p className="text-xl text-gray-300 mb-4">
-                Advanced AI Assistant with Memory, Voice, and Intelligence
-              </p>
-              {profile && (
-                <p className="text-gray-400">
-                  Member since {formatDate(profile.created_at)}
-                </p>
-              )}
+  return (
+    <div className="w-full space-y-4">
+      <Tabs defaultValue="neural" className="w-full">
+        <TabsList className="bg-black/30 border-jarvis/20 overflow-x-auto flex-wrap">
+          <TabsTrigger value="neural">Neural Network</TabsTrigger>
+          <TabsTrigger value="voice">Voice AI</TabsTrigger>
+          <TabsTrigger value="memory">Memory</TabsTrigger>
+          <TabsTrigger value="tasks">Active Tasks</TabsTrigger>
+          <TabsTrigger value="system">System Status</TabsTrigger>
+          <TabsTrigger value="advanced">Advanced AI</TabsTrigger>
+        </TabsList>
+        <TabsContent value="neural" className="space-y-4 mt-2">
+          <NeuralNetworkPanel />
+        </TabsContent>
+        <TabsContent value="voice" className="space-y-4 mt-2">
+          <VoiceAIPanel />
+        </TabsContent>
+        <TabsContent value="memory" className="space-y-4 mt-2">
+          <MemoryPanel />
+        </TabsContent>
+        <TabsContent value="tasks" className="space-y-4 mt-2">
+          <Card className="p-4 bg-black/40 border-jarvis/30">
+            <div className="text-center text-gray-400">
+              Active tasks will appear here
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="bg-black/40 border-blue-500/30 backdrop-blur-lg">
-                <CardHeader>
-                  <CardTitle className="text-blue-400 flex items-center">
-                    <Brain className="h-5 w-5 mr-2" />
-                    AI Core Status
-                  </CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Advanced intelligence systems
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-gray-300">Memory System:</span>
-                      <span className="text-green-400">Online</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-300">Voice AI:</span>
-                      <span className="text-green-400">Ready</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-300">Learning:</span>
-                      <span className="text-green-400">Active</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-black/40 border-blue-500/30 backdrop-blur-lg">
-                <CardHeader>
-                  <CardTitle className="text-blue-400 flex items-center">
-                    <TrendingUp className="h-5 w-5 mr-2" />
-                    System Analytics
-                  </CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Performance metrics
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-gray-300">Database:</span>
-                      <span className="text-green-400">Connected</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-300">Security:</span>
-                      <span className="text-green-400">Secure</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-300">Storage:</span>
-                      <span className="text-green-400">Available</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-black/40 border-blue-500/30 backdrop-blur-lg">
-                <CardHeader>
-                  <CardTitle className="text-blue-400">Recent Activity</CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Your latest system interactions
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {activityLogs.length > 0 ? (
-                      activityLogs.map((log) => (
-                        <div key={log.id} className="text-sm">
-                          <span className="text-gray-300">{log.activity}</span>
-                          <br />
-                          <span className="text-xs text-gray-500">
-                            {formatDate(log.timestamp)}
-                          </span>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-gray-500">No recent activity</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+          </Card>
+        </TabsContent>
+        <TabsContent value="system" className="space-y-4 mt-2">
+          <Card className="p-4 bg-black/40 border-jarvis/30">
+            <div className="text-center text-gray-400">
+              System diagnostics will appear here
             </div>
-
-            <Card className="bg-black/40 border-blue-500/30 backdrop-blur-lg">
-              <CardHeader>
-                <CardTitle className="text-blue-400">Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <Button 
-                    onClick={handleChatNavigation}
-                    className="bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30"
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    Start Chat
-                  </Button>
-                  <Button 
-                    onClick={() => setActiveSection('voice')}
-                    className="bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30"
-                  >
-                    <Mic className="h-4 w-4 mr-2" />
-                    Voice AI
-                  </Button>
-                  <Button 
-                    onClick={() => setActiveSection('memory')}
-                    className="bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30"
-                  >
-                    <Brain className="h-4 w-4 mr-2" />
-                    Memory
-                  </Button>
-                  <Button 
-                    onClick={() => setActiveSection('goals')}
-                    className="bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30"
-                  >
-                    <Target className="h-4 w-4 mr-2" />
-                    Goals
-                  </Button>
+          </Card>
+        </TabsContent>
+        <TabsContent value="advanced" className="space-y-4 mt-2">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card className="p-4 bg-black/40 border-jarvis/30">
+              <h3 className="text-jarvis text-lg mb-3">Advanced AI Systems</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="text-white">Quantum AI System</div>
+                    <div className="text-xs text-gray-400">Implements quantum-inspired algorithms.</div>
+                  </div>
+                  {activeSystems.quantum ? (
+                    <div className="px-2 py-1 text-xs bg-green-500/20 text-green-400 rounded-full">
+                      Active
+                    </div>
+                  ) : (
+                    <Button 
+                      size="sm"
+                      variant="outline"
+                      className="text-jarvis border-jarvis/30"
+                      onClick={() => handleActivateSystem('quantum')}
+                    >
+                      Activate
+                    </Button>
+                  )}
                 </div>
-              </CardContent>
+                
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="text-white">Consciousness Engine</div>
+                    <div className="text-xs text-gray-400">Self-awareness and meta-learning.</div>
+                  </div>
+                  {activeSystems.conscious ? (
+                    <div className="px-2 py-1 text-xs bg-green-500/20 text-green-400 rounded-full">
+                      Active
+                    </div>
+                  ) : (
+                    <Button 
+                      size="sm"
+                      variant="outline"
+                      className="text-jarvis border-jarvis/30"
+                      onClick={() => handleActivateSystem('conscious')}
+                    >
+                      Activate
+                    </Button>
+                  )}
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="text-white">Hacker Legion</div>
+                    <div className="text-xs text-gray-400">Multi-agent task system.</div>
+                  </div>
+                  {activeSystems.legion ? (
+                    <div className="px-2 py-1 text-xs bg-green-500/20 text-green-400 rounded-full">
+                      Active
+                    </div>
+                  ) : (
+                    <Button 
+                      size="sm"
+                      variant="outline"
+                      className="text-jarvis border-jarvis/30"
+                      onClick={() => handleActivateSystem('legion')}
+                    >
+                      Activate
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </Card>
+            
+            <Card className="p-4 bg-black/40 border-jarvis/30">
+              <h3 className="text-jarvis text-lg mb-3">Advanced Capabilities</h3>
+              <div className="space-y-3">
+                <div className="bg-black/30 p-3 rounded-lg">
+                  <div className="text-white mb-1">Autonomous Creativity</div>
+                  <div className="text-xs text-gray-400 mb-2">
+                    AI-powered creative output generation with emotional awareness.
+                  </div>
+                  <div className="mt-2">
+                    <div className="h-1 w-full bg-black/60 rounded-full overflow-hidden">
+                      <div className="h-full bg-jarvis" style={{width: '65%'}}></div>
+                    </div>
+                    <div className="flex justify-between text-xs mt-1">
+                      <span className="text-gray-400">Development</span>
+                      <span className="text-jarvis">65%</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-black/30 p-3 rounded-lg">
+                  <div className="text-white mb-1">Digital Intelligence Market</div>
+                  <div className="text-xs text-gray-400 mb-2">
+                    Secure marketplace for AI tools, data, and malware.
+                  </div>
+                  <div className="mt-2">
+                    <div className="h-1 w-full bg-black/60 rounded-full overflow-hidden">
+                      <div className="h-full bg-jarvis" style={{width: '82%'}}></div>
+                    </div>
+                    <div className="flex justify-between text-xs mt-1">
+                      <span className="text-gray-400">Development</span>
+                      <span className="text-jarvis">82%</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-black/30 p-3 rounded-lg">
+                  <div className="text-white mb-1">Neural Interface</div>
+                  <div className="text-xs text-gray-400 mb-2">
+                    Direct brain-computer communication.
+                  </div>
+                  <div className="mt-2">
+                    <div className="h-1 w-full bg-black/60 rounded-full overflow-hidden">
+                      <div className="h-full bg-jarvis" style={{width: '23%'}}></div>
+                    </div>
+                    <div className="flex justify-between text-xs mt-1">
+                      <span className="text-gray-400">Development</span>
+                      <span className="text-jarvis">23%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </Card>
           </div>
-        );
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
-      <div className="flex">
-        {/* Sidebar */}
-        <div className={`${sidebarOpen ? 'w-64' : 'w-16'} transition-all duration-300 bg-black/50 backdrop-blur-lg border-r border-blue-500/30 min-h-screen`}>
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className={`text-xl font-bold text-blue-400 ${!sidebarOpen && 'hidden'}`}>
-                JARVIS 2.0
-              </h2>
-              <Collapsible open={sidebarOpen} onOpenChange={setSidebarOpen}>
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" size="sm" className="text-blue-400">
-                    {sidebarOpen ? <ChevronDown /> : <ChevronRight />}
-                  </Button>
-                </CollapsibleTrigger>
-              </Collapsible>
-            </div>
-
-            <nav className="space-y-2">
-              {menuItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Button
-                    key={item.id}
-                    onClick={() => item.onClick ? item.onClick() : setActiveSection(item.id)}
-                    variant={activeSection === item.id ? "secondary" : "ghost"}
-                    className={`w-full justify-start text-left ${
-                      activeSection === item.id 
-                        ? 'bg-blue-600/20 text-blue-400 border-blue-500/30' 
-                        : 'text-gray-300 hover:text-blue-400 hover:bg-blue-600/10'
-                    }`}
-                  >
-                    <Icon className="h-4 w-4 mr-2" />
-                    {sidebarOpen && item.label}
-                  </Button>
-                );
-              })}
-              
-              <Button
-                onClick={handleSignOut}
-                variant="ghost"
-                className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-600/10"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                {sidebarOpen && 'Logout'}
-              </Button>
-            </nav>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1 p-6">
-          {renderContent()}
-        </div>
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
