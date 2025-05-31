@@ -1,4 +1,4 @@
-import { getOfflineJarvisResponse } from './services/offlineAIService';
+import { getOfflineJarvisResponse } from './offlineAIService';
 
 function handleUserMessage(userMessage: string) {
   // Use your offline AI instead of external API
