@@ -27,16 +27,19 @@ const MessageInput: React.FC<MessageInputProps> = ({
   isListening = false,
   isDisabled = false,
   onToggleListen,
-  enableVoice = false, // Default to false
+  enableVoice = false, // Default to false - must be explicitly enabled
   context = 'interface'
 }) => {
   const [visualFeedback, setVisualFeedback] = useState<'idle' | 'listening' | 'speaking'>('idle');
   const [dotCount, setDotCount] = useState(1);
   const [micPermission, setMicPermission] = useState<'unknown' | 'granted' | 'denied'>('unknown');
   
-  // Only check microphone permission if voice is enabled and not in dashboard
+  // Only check microphone permission if voice is explicitly enabled AND not in dashboard
   useEffect(() => {
-    if (!enableVoice || context === 'dashboard') return;
+    if (!enableVoice || context === 'dashboard') {
+      console.log('Voice disabled for context:', context);
+      return;
+    }
     
     const checkMicPermission = async () => {
       try {
@@ -55,7 +58,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
     checkMicPermission();
   }, [enableVoice, context]);
   
-  // Create visual feedback for voice recognition only if enabled
+  // Create visual feedback for voice recognition only if explicitly enabled
   useEffect(() => {
     if (!enableVoice || context === 'dashboard') return;
     
@@ -88,7 +91,11 @@ const MessageInput: React.FC<MessageInputProps> = ({
   };
 
   const handleMicClick = async () => {
-    if (!onToggleListen || !enableVoice || context === 'dashboard') return;
+    // Strict check - only allow mic if voice is explicitly enabled AND not in dashboard
+    if (!onToggleListen || !enableVoice || context === 'dashboard') {
+      console.log('Mic access blocked - enableVoice:', enableVoice, 'context:', context);
+      return;
+    }
     
     // If microphone permission is denied, request it
     if (micPermission === 'denied' || micPermission === 'unknown') {
@@ -113,8 +120,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
     onToggleListen();
   };
 
-  // Determine if mic should be shown (only in interface with voice enabled)
-  const showMicButton = enableVoice && context === 'interface' && onToggleListen;
+  // Determine if mic should be shown - ONLY in interface with voice explicitly enabled
+  const showMicButton = enableVoice === true && context === 'interface' && onToggleListen;
 
   return (
     <div className="p-3 bg-black/30 border-t border-jarvis/20">

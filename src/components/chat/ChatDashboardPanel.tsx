@@ -9,7 +9,7 @@ interface ChatDashboardPanelProps {
 }
 
 const ChatDashboardPanel: React.FC<ChatDashboardPanelProps> = ({ messages, isTyping }) => {
-  // Dashboard panel with no voice functionality - text-only interface
+  // Dashboard panel - completely text-only, no voice/mic functionality
   return (
     <div className="p-3 bg-black/20 border-b border-jarvis/20">
       <ErrorBoundaryWrapper>
