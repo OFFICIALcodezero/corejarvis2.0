@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Send, Mic, MicOff } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { toast } from '../ui/use-toast';
 
 interface MessageInputProps {
   input?: string;
@@ -27,8 +28,28 @@ const MessageInput: React.FC<MessageInputProps> = ({
 }) => {
   const [visualFeedback, setVisualFeedback] = useState<'idle' | 'listening' | 'speaking'>('idle');
   const [dotCount, setDotCount] = useState(1);
+  const [micPermission, setMicPermission] = useState<'unknown' | 'granted' | 'denied'>('unknown');
   
-  // Create visual feedback for voice recognition only when manually activated
+  // Check microphone permission on component mount
+  useEffect(() => {
+    const checkMicPermission = async () => {
+      try {
+        const result = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+        setMicPermission(result.state === 'granted' ? 'granted' : 'denied');
+        
+        result.addEventListener('change', () => {
+          setMicPermission(result.state === 'granted' ? 'granted' : 'denied');
+        });
+      } catch (err) {
+        // Fallback for browsers that don't support permissions API
+        setMicPermission('unknown');
+      }
+    };
+    
+    checkMicPermission();
+  }, []);
+  
+  // Create visual feedback for voice recognition
   useEffect(() => {
     let interval: number;
     
@@ -58,6 +79,32 @@ const MessageInput: React.FC<MessageInputProps> = ({
     }
   };
 
+  const handleMicClick = async () => {
+    if (!onToggleListen) return;
+    
+    // If microphone permission is denied, request it
+    if (micPermission === 'denied' || micPermission === 'unknown') {
+      try {
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+        setMicPermission('granted');
+        toast({
+          title: "Microphone Access Granted",
+          description: "You can now use voice input.",
+        });
+      } catch (err) {
+        setMicPermission('denied');
+        toast({
+          title: "Microphone Access Denied",
+          description: "Please allow microphone access to use voice features.",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+    
+    onToggleListen();
+  };
+
   return (
     <div className="p-3 bg-black/30 border-t border-jarvis/20">
       <div className="flex items-center">
@@ -65,9 +112,22 @@ const MessageInput: React.FC<MessageInputProps> = ({
           <Button
             variant="ghost"
             size="icon"
-            className={`mr-2 ${isListening ? 'text-jarvis bg-jarvis/20 hover:bg-jarvis/30' : 'text-gray-500 hover:text-jarvis'}`}
-            onClick={onToggleListen}
+            className={`mr-2 ${
+              isListening 
+                ? 'text-jarvis bg-jarvis/20 hover:bg-jarvis/30' 
+                : micPermission === 'denied' 
+                  ? 'text-red-500 hover:text-red-400' 
+                  : 'text-gray-500 hover:text-jarvis'
+            }`}
+            onClick={handleMicClick}
             disabled={isProcessing || isDisabled}
+            title={
+              micPermission === 'denied' 
+                ? 'Microphone access denied. Click to request permission.' 
+                : isListening 
+                  ? 'Stop listening' 
+                  : 'Start voice input'
+            }
           >
             {isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
           </Button>
@@ -102,6 +162,12 @@ const MessageInput: React.FC<MessageInputProps> = ({
           <Send className="h-5 w-5" />
         </Button>
       </div>
+      
+      {micPermission === 'denied' && (
+        <div className="mt-2 text-xs text-red-400 text-center">
+          Microphone access is required for voice input. Click the mic button to enable.
+        </div>
+      )}
     </div>
   );
 };

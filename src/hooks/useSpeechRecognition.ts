@@ -1,6 +1,6 @@
 
 /**
- * Custom hook for speech recognition
+ * Custom hook for speech recognition with improved error handling and permissions
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -14,23 +14,55 @@ interface SpeechRecognitionOptions {
 interface SpeechRecognitionHook {
   isListening: boolean;
   transcript: string;
-  startListening: () => void;
+  startListening: () => Promise<void>;
   stopListening: () => void;
   clearTranscript: () => void;
   error: string | null;
   isSupported: boolean;
+  hasPermission: boolean;
 }
 
 export const useSpeechRecognition = (options: SpeechRecognitionOptions = {}): SpeechRecognitionHook => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [hasPermission, setHasPermission] = useState(false);
   
   // Check if speech recognition is supported
   const isSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
   
   // Create a ref for the recognition instance
   const recognitionRef = useRef<any>(null);
+  const permissionCheckedRef = useRef(false);
+  
+  // Check microphone permission on mount
+  useEffect(() => {
+    const checkPermission = async () => {
+      if (permissionCheckedRef.current) return;
+      permissionCheckedRef.current = true;
+      
+      try {
+        const result = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+        setHasPermission(result.state === 'granted');
+        
+        result.addEventListener('change', () => {
+          setHasPermission(result.state === 'granted');
+        });
+      } catch (err) {
+        // Fallback: try to access microphone directly
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          setHasPermission(true);
+          stream.getTracks().forEach(track => track.stop());
+        } catch (micError) {
+          setHasPermission(false);
+          console.log('Microphone permission not granted:', micError);
+        }
+      }
+    };
+    
+    checkPermission();
+  }, []);
   
   // Initialize speech recognition
   useEffect(() => {
@@ -65,7 +97,8 @@ export const useSpeechRecognition = (options: SpeechRecognitionOptions = {}): Sp
     
     recognitionRef.current.onerror = (event: any) => {
       console.error('Speech recognition error:', event.error);
-      setError(event.error);
+      setError(`Speech recognition error: ${event.error}`);
+      setIsListening(false);
     };
     
     recognitionRef.current.onend = () => {
@@ -81,20 +114,35 @@ export const useSpeechRecognition = (options: SpeechRecognitionOptions = {}): Sp
   }, [options.continuous, options.interimResults, options.language, isSupported]);
   
   // Start listening
-  const startListening = useCallback(() => {
+  const startListening = useCallback(async () => {
     if (!isSupported) {
       setError('Speech recognition is not supported in this browser.');
       return;
     }
     
+    // Request microphone permission first
     try {
-      recognitionRef.current.start();
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+      setHasPermission(true);
+      setError(null);
+    } catch (err) {
+      setError('Microphone access denied. Please allow microphone access to use voice features.');
+      setHasPermission(false);
+      return;
+    }
+    
+    try {
+      if (recognitionRef.current) {
+        recognitionRef.current.start();
+      }
     } catch (err) {
       if (err instanceof Error && err.message.includes('already started')) {
         // If already started, stop and restart
         recognitionRef.current.stop();
         setTimeout(() => {
-          recognitionRef.current.start();
+          if (recognitionRef.current) {
+            recognitionRef.current.start();
+          }
         }, 100);
       } else {
         console.error('Failed to start speech recognition:', err);
@@ -122,7 +170,8 @@ export const useSpeechRecognition = (options: SpeechRecognitionOptions = {}): Sp
     stopListening,
     clearTranscript,
     error,
-    isSupported
+    isSupported,
+    hasPermission
   };
 };
 
