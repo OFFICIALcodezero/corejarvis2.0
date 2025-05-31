@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
@@ -54,7 +53,12 @@ const Index = () => {
           </div>
 
           <div className="flex justify-center mb-12">
-            <JarvisAvatar />
+            <JarvisAvatar 
+              activeMode="face"
+              isSpeaking={false}
+              isListening={false}
+              isProcessing={false}
+            />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">

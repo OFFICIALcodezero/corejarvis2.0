@@ -33,15 +33,8 @@ const StartupSequence: React.FC = () => {
       return () => clearTimeout(timer);
     } else {
       setIsComplete(true);
-      
-      // Redirect to interface after startup is complete
-      const redirectTimer = setTimeout(() => {
-        navigate('/interface');
-      }, 1500);
-      
-      return () => clearTimeout(redirectTimer);
     }
-  }, [currentLine, navigate]);
+  }, [currentLine]);
 
   return (
     <div className="h-screen bg-midnight flex flex-col items-center justify-center p-4 overflow-hidden">

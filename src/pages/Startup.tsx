@@ -28,7 +28,7 @@ const Startup = () => {
       <div className="absolute inset-0 bg-gradient-to-b from-blue-900/20 to-black" />
       
       <div className="relative z-10 text-center">
-        <StartupSequence onComplete={() => setIsComplete(true)} />
+        <StartupSequence />
         
         {isComplete && (
           <div className="mt-8 animate-fade-in">
