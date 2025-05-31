@@ -9,36 +9,7 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      youtube_logs: {
-        Row: {
-          command: string | null
-          id: string
-          mood: string
-          timestamp: string | null
-          user_id: string
-          video_title: string | null
-          video_url: string | null
-        }
-        Insert: {
-          command?: string | null
-          id?: string
-          mood?: string
-          timestamp?: string | null
-          user_id: string
-          video_title?: string | null
-          video_url?: string | null
-        }
-        Update: {
-          command?: string | null
-          id?: string
-          mood?: string
-          timestamp?: string | null
-          user_id?: string
-          video_title?: string | null
-          video_url?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
