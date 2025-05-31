@@ -81,8 +81,6 @@ const JarvisMainLayout: React.FC<JarvisMainLayoutProps> = ({
           />
           <div className="mt-4">
             <VoiceActivation 
-              isListening={isListening}
-              toggleListening={toggleListening}
               isSpeaking={isSpeaking}
               hackerMode={hackerModeActive}
             />
