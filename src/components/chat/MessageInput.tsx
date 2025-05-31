@@ -14,6 +14,8 @@ interface MessageInputProps {
   isListening?: boolean;
   isDisabled?: boolean;
   onToggleListen?: () => void;
+  enableVoice?: boolean; // New prop to control voice functionality
+  context?: 'dashboard' | 'interface'; // New prop to identify context
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({
@@ -25,13 +27,17 @@ const MessageInput: React.FC<MessageInputProps> = ({
   isListening = false,
   isDisabled = false,
   onToggleListen,
+  enableVoice = false, // Default to false
+  context = 'interface'
 }) => {
   const [visualFeedback, setVisualFeedback] = useState<'idle' | 'listening' | 'speaking'>('idle');
   const [dotCount, setDotCount] = useState(1);
   const [micPermission, setMicPermission] = useState<'unknown' | 'granted' | 'denied'>('unknown');
   
-  // Check microphone permission on component mount
+  // Only check microphone permission if voice is enabled and not in dashboard
   useEffect(() => {
+    if (!enableVoice || context === 'dashboard') return;
+    
     const checkMicPermission = async () => {
       try {
         const result = await navigator.permissions.query({ name: 'microphone' as PermissionName });
@@ -47,10 +53,12 @@ const MessageInput: React.FC<MessageInputProps> = ({
     };
     
     checkMicPermission();
-  }, []);
+  }, [enableVoice, context]);
   
-  // Create visual feedback for voice recognition
+  // Create visual feedback for voice recognition only if enabled
   useEffect(() => {
+    if (!enableVoice || context === 'dashboard') return;
+    
     let interval: number;
     
     if (isListening) {
@@ -66,7 +74,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isListening]);
+  }, [isListening, enableVoice, context]);
   
   const listeningText = `Listening${'.'.repeat(dotCount)}`;
   
@@ -80,7 +88,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   };
 
   const handleMicClick = async () => {
-    if (!onToggleListen) return;
+    if (!onToggleListen || !enableVoice || context === 'dashboard') return;
     
     // If microphone permission is denied, request it
     if (micPermission === 'denied' || micPermission === 'unknown') {
@@ -105,10 +113,13 @@ const MessageInput: React.FC<MessageInputProps> = ({
     onToggleListen();
   };
 
+  // Determine if mic should be shown (only in interface with voice enabled)
+  const showMicButton = enableVoice && context === 'interface' && onToggleListen;
+
   return (
     <div className="p-3 bg-black/30 border-t border-jarvis/20">
       <div className="flex items-center">
-        {onToggleListen && (
+        {showMicButton && (
           <Button
             variant="ghost"
             size="icon"
@@ -144,7 +155,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
           onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
         />
         
-        {isListening && (
+        {isListening && showMicButton && (
           <div className="absolute right-16 flex items-center justify-center">
             <Mic className="h-4 w-4 text-jarvis animate-pulse" />
           </div>
@@ -163,7 +174,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
         </Button>
       </div>
       
-      {micPermission === 'denied' && (
+      {micPermission === 'denied' && showMicButton && (
         <div className="mt-2 text-xs text-red-400 text-center">
           Microphone access is required for voice input. Click the mic button to enable.
         </div>

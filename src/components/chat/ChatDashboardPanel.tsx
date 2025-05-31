@@ -9,8 +9,7 @@ interface ChatDashboardPanelProps {
 }
 
 const ChatDashboardPanel: React.FC<ChatDashboardPanelProps> = ({ messages, isTyping }) => {
-  // Creating a safe wrapper that conditionally renders JarvisDashboard
-  // with error handling to prevent blank screens
+  // Dashboard panel with no voice functionality - text-only interface
   return (
     <div className="p-3 bg-black/20 border-b border-jarvis/20">
       <ErrorBoundaryWrapper>
@@ -41,7 +40,7 @@ const ErrorBoundaryWrapper: React.FC<{children: React.ReactNode}> = ({ children 
 
   // Try to render the dashboard, but catch errors
   try {
-    return children;
+    return <>{children}</>;
   } catch (error) {
     console.error("Error rendering dashboard:", error);
     setHasError(true);

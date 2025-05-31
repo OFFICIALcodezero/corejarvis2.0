@@ -140,7 +140,7 @@ const ChatInterface: React.FC = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Message Input */}
+        {/* Message Input - Text only, no mic functionality */}
         <form onSubmit={sendMessage} className="flex space-x-2">
           <Input
             value={newMessage}
