@@ -1,6 +1,7 @@
+
 // Import memory manager functions
 import { loadMemory, updateMemory } from '@/utils/memoryManager';
-import { getAssistantSystemPrompt } from '@/path/to/assistantConfig';
+import { getAssistantSystemPrompt } from './aiAssistantService';
 import { getApiKey } from '../utils/apiKeyManager';
 
 // Interface for the completion request
@@ -76,35 +77,38 @@ export const createCompletion = async (
       text: "I encountered an error while processing your request. Please check your API key and try again.",
     };
   }
+};
 
-    // Modify your generateAssistantResponse or wrapper function like this:
-
-async function generateAssistantResponseWithMemory(
-   userMessage: string,
-   chatHistory: Array<{ role: string; content: string }>,
-   assistant: AssistantType = 'jarvis'
- ): Promise<string> {
-   const memory = loadMemory();
+// Generate assistant response with memory integration
+export async function generateAssistantResponseWithMemory(
+  userMessage: string,
+  chatHistory: Array<{ role: string; content: string }>,
+  assistant: 'jarvis' = 'jarvis'
+): Promise<string> {
+  const memory = loadMemory();
 
   // Example: include user info in system prompt for context
-   const userName = memory['userName'] || 'User';
-   const systemPrompt = `${getAssistantSystemPrompt(assistant)}\nUser's name is ${userName}. Remember this.`;
+  const userName = memory['userName'] || 'User';
+  const systemPrompt = `${getAssistantSystemPrompt(assistant)}\nUser's name is ${userName}. Remember this.`;
 
-   const messages = [
-      { role: 'system', content: systemPrompt },
-      ...chatHistory.slice(-10),
-      { role: 'user', content: userMessage }
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    ...chatHistory.slice(-10),
+    { role: 'user', content: userMessage }
   ];
 
-  // Call your existing AI API method with messages (adjust accordingly)
-  const response = await yourExistingGenerateResponseFunction(messages);
+  // Call the completion function
+  const response = await createCompletion({
+    prompt: messages.map(m => `${m.role}: ${m.content}`).join('\n'),
+    temperature: 0.7,
+    maxTokens: 500
+  });
 
   // Update memory if user shares their name
   if (userMessage.toLowerCase().includes('my name is')) {
-  const name = userMessage.split('my name is')[1].trim();
+    const name = userMessage.split('my name is')[1].trim();
     updateMemory('userName', name);
   }
 
-  return response;
+  return response.text;
 }
-};
