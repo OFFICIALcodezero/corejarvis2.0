@@ -1,6 +1,7 @@
+
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Mic, Upload, Terminal, Heart, Brain, Camera, Globe, Calendar, Mail, VolumeX, Volume2 } from 'lucide-react';
-import { logToSupabase } from '../supabase'; // Correctly importing from our new mock file
+import { Send, Upload, Terminal, Heart, Brain, Camera, Globe, Calendar, Mail, VolumeX, Volume2 } from 'lucide-react';
+import { logToSupabase } from '../supabase';
 
 type Message = {
   id: number;
@@ -21,7 +22,6 @@ const ChatInterface = () => {
     }
   ]);
   const [input, setInput] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
   const [jarvisMode, setJarvisMode] = useState<JarvisMode>('assistant');
   const [isProcessing, setIsProcessing] = useState(false);
   const [hackerOutput, setHackerOutput] = useState('');
@@ -72,7 +72,6 @@ const ChatInterface = () => {
       const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
       window.open(url, "_blank");
 
-      // Use a regular function instead of an immediately invoked async function
       const logResult = () => {
         logToSupabase(input, "Play YouTube video", url, "neutral")
           .catch(err => console.error("Error logging to Supabase:", err));
@@ -81,7 +80,7 @@ const ChatInterface = () => {
       logResult();
 
       setInput('');
-      return; // Stop further processing
+      return;
     }
 
     const newUserMessage: Message = {
@@ -137,50 +136,9 @@ const ChatInterface = () => {
     // Simulate text-to-speech
     setIsSpeaking(true);
     
-    // In a real implementation, this would use ElevenLabs API
     setTimeout(() => {
       setIsSpeaking(false);
     }, 3000);
-    
-    // If we had actual audio:
-    // if (audioRef.current) {
-    //   audioRef.current.src = audioUrl;
-    //   audioRef.current.play();
-    // }
-  };
-
-  const startVoiceRecording = () => {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      alert("Sorry, your browser doesn't support microphone access.");
-      return;
-    }
-
-    setIsRecording(true);
-    
-    navigator.mediaDevices.getUserMedia({ audio: true })
-      .then((stream) => {
-        // In a real app, we would process the audio stream here
-        // For demo purposes, we'll simulate voice recognition
-        
-        setTimeout(() => {
-          setIsRecording(false);
-          const voiceCommands = [
-            "What's the weather like today?",
-            "Run a system scan",
-            "Tell me a joke",
-            "Analyze this network",
-            "Translate hello to Spanish"
-          ];
-          
-          const randomCommand = voiceCommands[Math.floor(Math.random() * voiceCommands.length)];
-          setInput(randomCommand);
-        }, 2000);
-      })
-      .catch((err) => {
-        console.error("Error accessing microphone:", err);
-        setIsRecording(false);
-        alert("Error accessing your microphone. Please check permissions.");
-      });
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -235,7 +193,6 @@ const ChatInterface = () => {
   const toggleMute = () => {
     setIsMuted(!isMuted);
     if (isSpeaking && !isMuted) {
-      // Stop speaking if we're muting
       setIsSpeaking(false);
     }
   };
@@ -364,7 +321,7 @@ const ChatInterface = () => {
         <div ref={messagesEndRef}></div>
       </div>
 
-      {/* Input area */}
+      {/* Input area - Text only, no microphone */}
       <div className="p-4 glass-card border-t border-jarvis/30 flex flex-col">
         {/* Voice status */}
         {isSpeaking && (
@@ -395,20 +352,12 @@ const ChatInterface = () => {
             className="hidden"
           />
           
-          <button 
-            onClick={startVoiceRecording}
-            className={`p-2 ${isRecording ? 'text-jarvis animate-pulse' : 'text-gray-400 hover:text-jarvis'} transition-colors`}
-          >
-            <Mic size={20} />
-          </button>
-          
           <input 
             type="text" 
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-            placeholder={isRecording ? "Listening..." : "Type your message..."}
-            disabled={isRecording}
+            placeholder="Type your message..."
             className="flex-grow p-2 glass-card border-jarvis/20 text-white placeholder-gray-400 focus:outline-none focus:border-jarvis/50 focus:shadow-jarvis-glow"
           />
           
@@ -424,7 +373,7 @@ const ChatInterface = () => {
         {/* Mode indicator */}
         <div className="mt-2 flex justify-between text-xs text-gray-400">
           <span>{jarvisMode.charAt(0).toUpperCase() + jarvisMode.slice(1)} Mode</span>
-          <span>{isRecording ? "Listening..." : isSpeaking ? "Speaking..." : "Ready"}</span>
+          <span>{isSpeaking ? "Speaking..." : "Text only"}</span>
         </div>
       </div>
     </div>
