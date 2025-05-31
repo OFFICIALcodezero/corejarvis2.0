@@ -9,13 +9,147 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      activity_logs: {
+        Row: {
+          activity: string
+          id: string
+          timestamp: string | null
+          user_id: string
+        }
+        Insert: {
+          activity: string
+          id?: string
+          timestamp?: string | null
+          user_id: string
+        }
+        Update: {
+          activity?: string
+          id?: string
+          timestamp?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      console_logs: {
+        Row: {
+          command: string
+          id: string
+          timestamp: string | null
+          user_id: string
+        }
+        Insert: {
+          command: string
+          id?: string
+          timestamp?: string | null
+          user_id: string
+        }
+        Update: {
+          command?: string
+          id?: string
+          timestamp?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          id: string
+          message: string
+          timestamp: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          message: string
+          timestamp?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          message?: string
+          timestamp?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notes: {
+        Row: {
+          content: string
+          id: string
+          timestamp: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          id?: string
+          timestamp?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          id?: string
+          timestamp?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          completed: boolean | null
+          created_at: string | null
+          id: string
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          created_at?: string | null
+          id?: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          created_at?: string | null
+          id?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      log_activity: {
+        Args: { activity_text: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

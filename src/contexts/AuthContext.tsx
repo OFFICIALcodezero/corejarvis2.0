@@ -1,79 +1,78 @@
 
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { 
-  FirebaseUser, 
-  getCurrentUser, 
-  signInWithGoogle,
-  signInWithFacebook,
-  signInWithGithub, 
-  signOut 
-} from '@/services/firebaseService';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AuthContextType {
-  user: FirebaseUser | null;
+  user: User | null;
+  session: Session | null;
   isLoading: boolean;
-  signIn: () => Promise<FirebaseUser | null>;
-  signInWithFB: () => Promise<FirebaseUser | null>;
-  signInWithGH: () => Promise<FirebaseUser | null>;
-  logOut: () => Promise<boolean>;
+  signUp: (email: string, password: string) => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
-  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const currentUser = await getCurrentUser();
-        setUser(currentUser);
-      } catch (error) {
-        console.error('Error checking authentication state:', error);
-      } finally {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
         setIsLoading(false);
       }
-    };
+    );
 
-    fetchUser();
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = async () => {
-    const user = await signInWithGoogle();
-    setUser(user);
-    return user;
-  };
-  
-  const signInWithFB = async () => {
-    const user = await signInWithFacebook();
-    setUser(user);
-    return user;
-  };
-  
-  const signInWithGH = async () => {
-    const user = await signInWithGithub();
-    setUser(user);
-    return user;
+  const signUp = async (email: string, password: string) => {
+    const redirectUrl = `${window.location.origin}/dashboard`;
+    
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: redirectUrl
+      }
+    });
+    return { error };
   };
 
-  const logOut = async () => {
-    const success = await signOut();
-    if (success) {
-      setUser(null);
-    }
-    return success;
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+    return { error };
+  };
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
+        session,
         isLoading,
+        signUp,
         signIn,
-        signInWithFB,
-        signInWithGH,
-        logOut
+        signOut
       }}
     >
       {children}
