@@ -13,14 +13,14 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   variant = 'default', 
   size = 'sm' 
 }) => {
-  const { user, signIn, logOut, isLoading } = useAuth();
+  const { user, signOut, isLoading } = useAuth();
 
   const handleAuth = async () => {
     if (user) {
-      await logOut();
-    } else {
-      await signIn();
+      await signOut();
     }
+    // Note: Google sign-in would need to be implemented separately
+    // This component currently only handles sign out
   };
 
   const getButtonStyle = () => {
@@ -43,6 +43,8 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
     }
   };
 
+  if (!user) return null;
+
   return (
     <Button
       className={`${getButtonStyle()} ${getSizeStyle()} flex items-center gap-2 transition-all rounded-md`}
@@ -51,15 +53,10 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
     >
       {isLoading ? (
         <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-      ) : user ? (
+      ) : (
         <>
           <LogOut className="h-4 w-4" />
           <span>Sign Out</span>
-        </>
-      ) : (
-        <>
-          <LogIn className="h-4 w-4" />
-          <span>Sign In</span>
         </>
       )}
     </Button>

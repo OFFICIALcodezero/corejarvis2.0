@@ -13,7 +13,7 @@ import {
 import { User } from 'lucide-react';
 
 const UserProfileButton: React.FC = () => {
-  const { user, logOut } = useAuth();
+  const { user, signOut } = useAuth();
 
   if (!user) return null;
 
@@ -21,21 +21,13 @@ const UserProfileButton: React.FC = () => {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-          {user.photoURL ? (
-            <img 
-              src={user.photoURL} 
-              alt={user.displayName || 'User profile'} 
-              className="h-8 w-8 rounded-full object-cover" 
-            />
-          ) : (
-            <User className="h-4 w-4" />
-          )}
+          <User className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-64" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.displayName}</p>
+            <p className="text-sm font-medium leading-none">{user.email}</p>
             <p className="text-xs leading-none text-muted-foreground">
               {user.email}
             </p>
@@ -44,7 +36,7 @@ const UserProfileButton: React.FC = () => {
         <DropdownMenuSeparator />
         <DropdownMenuItem 
           className="cursor-pointer" 
-          onClick={() => logOut()}
+          onClick={() => signOut()}
         >
           Log out
         </DropdownMenuItem>
