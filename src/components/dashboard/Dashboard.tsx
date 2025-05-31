@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -12,7 +13,14 @@ import {
   LogOut,
   ChevronDown,
   ChevronRight,
-  User
+  User,
+  Brain,
+  Calendar,
+  Target,
+  Mic,
+  Code,
+  Heart,
+  TrendingUp
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -22,6 +30,8 @@ import TaskManager from './TaskManager';
 import FileManager from './FileManager';
 import ConsoleInterface from './ConsoleInterface';
 import ProfilePage from './ProfilePage';
+import MemoryPanel from '@/components/memory/MemoryPanel';
+import VoiceAIPanel from '@/components/voice/VoiceAIPanel';
 
 interface ActivityLog {
   id: string;
@@ -107,6 +117,12 @@ const Dashboard: React.FC = () => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'chat', label: 'Chat', icon: FileText, onClick: handleChatNavigation },
+    { id: 'memory', label: 'Memory System', icon: Brain },
+    { id: 'voice', label: 'Voice AI', icon: Mic },
+    { id: 'calendar', label: 'Calendar', icon: Calendar },
+    { id: 'goals', label: 'Goals & Habits', icon: Target },
+    { id: 'code', label: 'Code Assistant', icon: Code },
+    { id: 'mood', label: 'Mood Tracker', icon: Heart },
     { id: 'files', label: 'Files', icon: Files },
     { id: 'notes', label: 'Notes', icon: FileText },
     { id: 'tasks', label: 'Tasks', icon: FileText },
@@ -118,6 +134,20 @@ const Dashboard: React.FC = () => {
     switch (activeSection) {
       case 'chat':
         return <ChatInterface />;
+      case 'memory':
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-blue-400">Memory System</h2>
+            <MemoryPanel />
+          </div>
+        );
+      case 'voice':
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-blue-400">Voice AI System</h2>
+            <VoiceAIPanel />
+          </div>
+        );
       case 'files':
         return <FileManager />;
       case 'notes':
@@ -133,10 +163,10 @@ const Dashboard: React.FC = () => {
           <div className="space-y-6">
             <div className="text-center">
               <h1 className="text-4xl font-bold text-blue-400 mb-2 animate-pulse">
-                Welcome to JARVIS
+                Welcome to JARVIS 2.0
               </h1>
               <p className="text-xl text-gray-300 mb-4">
-                Hello, {user?.email}
+                Advanced AI Assistant with Memory, Voice, and Intelligence
               </p>
               {profile && (
                 <p className="text-gray-400">
@@ -145,20 +175,47 @@ const Dashboard: React.FC = () => {
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Card className="bg-black/40 border-blue-500/30 backdrop-blur-lg">
                 <CardHeader>
-                  <CardTitle className="text-blue-400">System Status</CardTitle>
+                  <CardTitle className="text-blue-400 flex items-center">
+                    <Brain className="h-5 w-5 mr-2" />
+                    AI Core Status
+                  </CardTitle>
                   <CardDescription className="text-gray-400">
-                    All systems operational
+                    Advanced intelligence systems
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-gray-300">AI Core:</span>
+                      <span className="text-gray-300">Memory System:</span>
                       <span className="text-green-400">Online</span>
                     </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">Voice AI:</span>
+                      <span className="text-green-400">Ready</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">Learning:</span>
+                      <span className="text-green-400">Active</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-black/40 border-blue-500/30 backdrop-blur-lg">
+                <CardHeader>
+                  <CardTitle className="text-blue-400 flex items-center">
+                    <TrendingUp className="h-5 w-5 mr-2" />
+                    System Analytics
+                  </CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Performance metrics
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-gray-300">Database:</span>
                       <span className="text-green-400">Connected</span>
@@ -166,6 +223,10 @@ const Dashboard: React.FC = () => {
                     <div className="flex justify-between">
                       <span className="text-gray-300">Security:</span>
                       <span className="text-green-400">Secure</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">Storage:</span>
+                      <span className="text-green-400">Available</span>
                     </div>
                   </div>
                 </CardContent>
@@ -208,25 +269,29 @@ const Dashboard: React.FC = () => {
                     onClick={handleChatNavigation}
                     className="bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30"
                   >
+                    <FileText className="h-4 w-4 mr-2" />
                     Start Chat
                   </Button>
                   <Button 
-                    onClick={() => setActiveSection('files')}
+                    onClick={() => setActiveSection('voice')}
                     className="bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30"
                   >
-                    Upload Files
+                    <Mic className="h-4 w-4 mr-2" />
+                    Voice AI
                   </Button>
                   <Button 
-                    onClick={() => setActiveSection('notes')}
+                    onClick={() => setActiveSection('memory')}
                     className="bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30"
                   >
-                    Create Note
+                    <Brain className="h-4 w-4 mr-2" />
+                    Memory
                   </Button>
                   <Button 
-                    onClick={() => setActiveSection('tasks')}
+                    onClick={() => setActiveSection('goals')}
                     className="bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30"
                   >
-                    Add Task
+                    <Target className="h-4 w-4 mr-2" />
+                    Goals
                   </Button>
                 </div>
               </CardContent>
@@ -244,7 +309,7 @@ const Dashboard: React.FC = () => {
           <div className="p-4">
             <div className="flex items-center justify-between mb-8">
               <h2 className={`text-xl font-bold text-blue-400 ${!sidebarOpen && 'hidden'}`}>
-                JARVIS
+                JARVIS 2.0
               </h2>
               <Collapsible open={sidebarOpen} onOpenChange={setSidebarOpen}>
                 <CollapsibleTrigger asChild>

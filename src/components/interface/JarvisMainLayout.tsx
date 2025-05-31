@@ -8,6 +8,7 @@ import HackerMode from '@/components/chat/HackerMode';
 import { LocationAwareness } from '@/features/LocationAwareness';
 import FaceDetection from '@/features/FaceDetection';
 import WeatherDisplay from '@/features/WeatherDisplay';
+import VoiceAIPanel from '@/components/voice/VoiceAIPanel';
 
 interface JarvisMainLayoutProps {
   isSpeaking: boolean;
@@ -72,21 +73,23 @@ const JarvisMainLayout: React.FC<JarvisMainLayoutProps> = ({
   return (
     <div className="flex-1 flex flex-col lg:flex-row gap-4 p-4 z-10">
       <div className="lg:w-1/3 order-2 lg:order-1">
-        <div className={`${hackerModeActive ? 'bg-black/40 border-red-500/20' : 'glass-morphism'} p-4 rounded-2xl h-full flex flex-col`}>
+        <div className={`${hackerModeActive ? 'bg-black/40 border-red-500/20' : 'glass-morphism'} p-4 rounded-2xl h-full flex flex-col space-y-4`}>
           <JarvisCentralCore 
             isSpeaking={isSpeaking}
             isListening={isListening}
             isProcessing={isProcessing}
             activeMode={hackerModeActive ? 'hacker' : activeMode}
           />
-          <div className="mt-4">
-            <VoiceActivation 
-              isSpeaking={isSpeaking}
-              hackerMode={hackerModeActive}
-            />
-          </div>
           
-          <div className="mt-4 space-y-4">
+          <VoiceActivation 
+            isSpeaking={isSpeaking}
+            hackerMode={hackerModeActive}
+          />
+          
+          {/* Advanced Voice AI Panel */}
+          <VoiceAIPanel hackerMode={hackerModeActive} />
+          
+          <div className="space-y-4">
             <LocationAwareness 
               userLocation={userLocation} 
               isLoading={locationLoading} 
