@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { AdminAuthService } from '@/services/adminAuthService';
 import { SecureApiKeyService, ApiKeyEntry } from '@/services/secureApiKeyService';
 import { toast } from './ui/use-toast';
-import { Plus, Trash2, Key, Activity, LogOut, Shield, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, Key, LogOut, Shield, AlertTriangle } from 'lucide-react';
 
 const AdminApiKeyManager: React.FC = () => {
   const [keys, setKeys] = useState<ApiKeyEntry[]>([]);
@@ -20,19 +20,35 @@ const AdminApiKeyManager: React.FC = () => {
     expiryDate: ''
   });
   const [usageStats, setUsageStats] = useState<any>({});
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 5000); // Refresh every 5 seconds
+    const interval = setInterval(loadData, 10000); // Refresh every 10 seconds
     return () => clearInterval(interval);
   }, []);
 
-  const loadData = () => {
-    setKeys(SecureApiKeyService.getAllKeys());
-    setUsageStats(SecureApiKeyService.getUsageStats());
+  const loadData = async () => {
+    try {
+      const [keysData, statsData] = await Promise.all([
+        SecureApiKeyService.getAllKeys(),
+        SecureApiKeyService.getUsageStats()
+      ]);
+      setKeys(keysData);
+      setUsageStats(statsData);
+    } catch (error) {
+      console.error('Error loading data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load API key data",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleAddKey = () => {
+  const handleAddKey = async () => {
     if (!newKey.key || !newKey.label) {
       toast({
         title: "Error",
@@ -42,7 +58,7 @@ const AdminApiKeyManager: React.FC = () => {
       return;
     }
 
-    SecureApiKeyService.addApiKey(
+    const success = await SecureApiKeyService.addApiKey(
       newKey.service,
       newKey.key,
       newKey.label,
@@ -50,44 +66,70 @@ const AdminApiKeyManager: React.FC = () => {
       newKey.expiryDate || undefined
     );
 
-    setNewKey({
-      service: 'groq',
-      key: '',
-      label: '',
-      maxUsage: 1000,
-      expiryDate: ''
-    });
+    if (success) {
+      setNewKey({
+        service: 'groq',
+        key: '',
+        label: '',
+        maxUsage: 1000,
+        expiryDate: ''
+      });
 
-    loadData();
-    toast({
-      title: "API Key Added",
-      description: `${newKey.service} key "${newKey.label}" has been added successfully`
-    });
-  };
-
-  const handleDeleteKey = (id: string) => {
-    if (confirm('Are you sure you want to delete this API key?')) {
-      SecureApiKeyService.deleteApiKey(id);
-      loadData();
+      await loadData();
       toast({
-        title: "API Key Deleted",
-        description: "The API key has been removed from the system"
+        title: "API Key Added",
+        description: `${newKey.service} key "${newKey.label}" has been added successfully`
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to add API key",
+        variant: "destructive"
       });
     }
   };
 
-  const handleToggleKey = (id: string, currentStatus: boolean) => {
-    SecureApiKeyService.updateApiKey(id, { isActive: !currentStatus });
-    loadData();
-    toast({
-      title: currentStatus ? "Key Deactivated" : "Key Activated",
-      description: `API key has been ${currentStatus ? 'deactivated' : 'activated'}`
-    });
+  const handleDeleteKey = async (id: string) => {
+    if (confirm('Are you sure you want to delete this API key?')) {
+      const success = await SecureApiKeyService.deleteApiKey(id);
+      
+      if (success) {
+        await loadData();
+        toast({
+          title: "API Key Deleted",
+          description: "The API key has been removed from the system"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to delete API key",
+          variant: "destructive"
+        });
+      }
+    }
   };
 
-  const handleCleanup = () => {
-    const removed = SecureApiKeyService.cleanupInactiveKeys();
-    loadData();
+  const handleToggleKey = async (id: string, currentStatus: boolean) => {
+    const success = await SecureApiKeyService.updateApiKey(id, { is_active: !currentStatus });
+    
+    if (success) {
+      await loadData();
+      toast({
+        title: currentStatus ? "Key Deactivated" : "Key Activated",
+        description: `API key has been ${currentStatus ? 'deactivated' : 'activated'}`
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to update API key",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleCleanup = async () => {
+    const removed = await SecureApiKeyService.cleanupInactiveKeys();
+    await loadData();
     toast({
       title: "Cleanup Complete",
       description: `Removed ${removed} inactive API keys`
@@ -100,15 +142,23 @@ const AdminApiKeyManager: React.FC = () => {
   };
 
   const getStatusColor = (key: ApiKeyEntry) => {
-    if (!key.isActive) return 'text-red-500';
-    if (key.expiryDate && new Date(key.expiryDate) < new Date()) return 'text-orange-500';
-    if (key.usageCount >= key.maxUsage * 0.9) return 'text-yellow-500';
+    if (!key.is_active) return 'text-red-500';
+    if (key.expiry_date && new Date(key.expiry_date) < new Date()) return 'text-orange-500';
+    if (key.usage_count >= key.max_usage * 0.9) return 'text-yellow-500';
     return 'text-green-500';
   };
 
   const getUsagePercentage = (key: ApiKeyEntry) => {
-    return Math.round((key.usageCount / key.maxUsage) * 100);
+    return Math.round((key.usage_count / key.max_usage) * 100);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black flex items-center justify-center">
+        <div className="text-blue-400 text-xl">Loading Admin Panel...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black p-6">
@@ -213,7 +263,7 @@ const AdminApiKeyManager: React.FC = () => {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-green-400 flex items-center">
               <Key className="h-5 w-5 mr-2" />
-              Managed API Keys
+              Database-Managed API Keys
             </CardTitle>
             <Button onClick={handleCleanup} variant="outline" size="sm" className="border-orange-500/30 text-orange-400">
               <Trash2 className="h-4 w-4 mr-2" />
@@ -238,12 +288,12 @@ const AdminApiKeyManager: React.FC = () => {
                       </div>
                       <div className="flex space-x-2">
                         <Button
-                          onClick={() => handleToggleKey(key.id, key.isActive)}
+                          onClick={() => handleToggleKey(key.id, key.is_active)}
                           size="sm"
                           variant="outline"
-                          className={`border-${key.isActive ? 'red' : 'green'}-500/30 text-${key.isActive ? 'red' : 'green'}-400`}
+                          className={`border-${key.is_active ? 'red' : 'green'}-500/30 text-${key.is_active ? 'red' : 'green'}-400`}
                         >
-                          {key.isActive ? 'Deactivate' : 'Activate'}
+                          {key.is_active ? 'Deactivate' : 'Activate'}
                         </Button>
                         <Button
                           onClick={() => handleDeleteKey(key.id)}
@@ -260,25 +310,25 @@ const AdminApiKeyManager: React.FC = () => {
                       <div>
                         <span className="text-gray-400">Status: </span>
                         <span className={getStatusColor(key)}>
-                          {key.isActive ? 'Active' : 'Inactive'}
+                          {key.is_active ? 'Active' : 'Inactive'}
                         </span>
                       </div>
                       <div>
                         <span className="text-gray-400">Usage: </span>
                         <span className="text-white">
-                          {key.usageCount}/{key.maxUsage} ({getUsagePercentage(key)}%)
+                          {key.usage_count}/{key.max_usage} ({getUsagePercentage(key)}%)
                         </span>
                       </div>
                       <div>
                         <span className="text-gray-400">Added: </span>
                         <span className="text-white">
-                          {new Date(key.addedAt).toLocaleDateString()}
+                          {new Date(key.created_at).toLocaleDateString()}
                         </span>
                       </div>
                       <div>
                         <span className="text-gray-400">Last Used: </span>
                         <span className="text-white">
-                          {key.lastUsed ? new Date(key.lastUsed).toLocaleDateString() : 'Never'}
+                          {key.last_used_at ? new Date(key.last_used_at).toLocaleDateString() : 'Never'}
                         </span>
                       </div>
                     </div>

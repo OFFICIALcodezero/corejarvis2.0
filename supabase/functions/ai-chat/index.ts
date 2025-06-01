@@ -7,30 +7,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Secure API Key Service implementation for edge function
-class EdgeSecureApiKeyService {
-  private static readonly STORAGE_KEY = 'jarvis_secure_api_keys';
-
-  static getActiveKey(service: 'groq' | 'elevenlabs' | 'openai'): string | null {
-    try {
-      // In edge function, we'll try environment variables first as fallback
-      if (service === 'groq') {
-        const envKey = Deno.env.get('GROQ_API_KEY');
-        if (envKey) return envKey;
-      }
-      
-      // For production, keys should be managed through the admin panel
-      // This is a fallback approach - in a real deployment, you'd want to
-      // store the admin-managed keys in a secure database table
-      console.log(`No ${service} API key available in environment variables`);
-      return null;
-    } catch (error) {
-      console.error(`Error retrieving ${service} API key:`, error);
-      return null;
-    }
-  }
-}
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -67,10 +43,13 @@ serve(async (req) => {
       )
     }
 
-    // Get Groq API key from secure service
-    const groqApiKey = EdgeSecureApiKeyService.getActiveKey('groq')
-    if (!groqApiKey) {
-      console.error('No Groq API key available')
+    // Get Groq API key from database using the secure function
+    const { data: groqApiKey, error: keyError } = await supabaseClient.rpc('get_active_api_key', {
+      service_name: 'groq'
+    });
+
+    if (keyError || !groqApiKey) {
+      console.error('No Groq API key available:', keyError)
       return new Response(
         JSON.stringify({ 
           error: 'AI service temporarily unavailable',
@@ -100,7 +79,7 @@ serve(async (req) => {
         systemPrompt = "You are JARVIS, a helpful AI assistant. You're knowledgeable, professional, and aim to be as helpful as possible."
     }
 
-    // Call Groq API securely
+    // Call Groq API securely using the database-managed key
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {

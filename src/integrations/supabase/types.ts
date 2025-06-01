@@ -30,6 +30,48 @@ export type Database = {
         }
         Relationships: []
       }
+      api_keys: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expiry_date: string | null
+          id: string
+          is_active: boolean
+          key_value: string
+          label: string
+          last_used_at: string | null
+          max_usage: number
+          service: string
+          usage_count: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expiry_date?: string | null
+          id?: string
+          is_active?: boolean
+          key_value: string
+          label: string
+          last_used_at?: string | null
+          max_usage?: number
+          service: string
+          usage_count?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expiry_date?: string | null
+          id?: string
+          is_active?: boolean
+          key_value?: string
+          label?: string
+          last_used_at?: string | null
+          max_usage?: number
+          service?: string
+          usage_count?: number
+        }
+        Relationships: []
+      }
       body_stats: {
         Row: {
           body_fat_percentage: number | null
@@ -955,6 +997,10 @@ export type Database = {
       binary_quantize: {
         Args: { "": string } | { "": unknown }
         Returns: unknown
+      }
+      get_active_api_key: {
+        Args: { service_name: string }
+        Returns: string
       }
       gtrgm_compress: {
         Args: { "": unknown }
