@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -447,6 +446,10 @@ const PracticalDashboard = () => {
           }
         };
         
+        recognition.onerror = (event: any) => {
+          toast("Voice Error", { description: `Speech recognition error: ${event.error}` });
+        };
+        
         recognition.start();
       }, 1000);
     } else {
@@ -669,7 +672,7 @@ const PracticalDashboard = () => {
             name: 'News Feed',
             description: 'Latest news updates',
             icon: Rss,
-            action: handleNewsFeeded,
+            action: handleNewsFeed,
             status: 'active'
           }
         ]
