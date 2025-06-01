@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Card } from "../ui/card";
@@ -8,6 +7,7 @@ import { Button } from "../ui/button";
 import VoiceAIPanel from "../voice/VoiceAIPanel";
 import { MemoryPanel } from "../memory/MemoryPanel";
 import PracticalDashboard from "./PracticalDashboard";
+import AdvancedTools from "./AdvancedTools";
 
 const Dashboard: React.FC = () => {
   const [activeSystems, setActiveSystems] = useState({
@@ -35,10 +35,15 @@ const Dashboard: React.FC = () => {
     });
   };
 
-  // Always show practical dashboard
   return (
     <div className="min-h-screen bg-black">
-      <PracticalDashboard />
+      <div className="container mx-auto p-6 space-y-6">
+        {/* Advanced Tools Section */}
+        <AdvancedTools />
+        
+        {/* Existing Practical Dashboard */}
+        <PracticalDashboard />
+      </div>
     </div>
   );
 };

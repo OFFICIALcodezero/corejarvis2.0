@@ -786,6 +786,51 @@ export type Database = {
         }
         Relationships: []
       }
+      system_logs: {
+        Row: {
+          id: string
+          status: string
+          system_name: string
+          timestamp: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          status: string
+          system_name: string
+          timestamp?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          status?: string
+          system_name?: string
+          timestamp?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      systems_status: {
+        Row: {
+          id: string
+          is_active: boolean
+          system_name: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          is_active?: boolean
+          system_name: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          is_active?: boolean
+          system_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           completed: boolean | null
