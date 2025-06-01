@@ -102,7 +102,11 @@ export class SecureApiKeyService {
         return [];
       }
 
-      return data || [];
+      // Type assertion to ensure service field matches our union type
+      return (data || []).map(key => ({
+        ...key,
+        service: key.service as 'groq' | 'elevenlabs' | 'openai'
+      }));
     } catch (error) {
       console.error('Error fetching API keys:', error);
       return [];
