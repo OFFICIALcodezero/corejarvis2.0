@@ -1,7 +1,6 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Upload, Terminal, Heart, Brain, Camera, Globe, Calendar, Mail, VolumeX, Volume2 } from 'lucide-react';
-import { logToSupabase } from '../supabase';
+import { SecureApiClient } from '../utils/secureApiClient';
 
 type Message = {
   id: number;
@@ -71,14 +70,6 @@ const ChatInterface = () => {
       const query = inputLower.replace("play", "").trim();
       const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
       window.open(url, "_blank");
-
-      const logResult = () => {
-        logToSupabase(input, "Play YouTube video", url, "neutral")
-          .catch(err => console.error("Error logging to Supabase:", err));
-      };
-      
-      logResult();
-
       setInput('');
       return;
     }
@@ -98,36 +89,65 @@ const ChatInterface = () => {
   const processUserInput = async (userInput: string) => {
     setIsProcessing(true);
     
-    // Simulate processing delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    let response = '';
-    
-    if (jarvisMode === 'assistant') {
-      response = `I'm analyzing your request: "${userInput}". As your AI assistant, I'll help you with that.`;
-    } else if (jarvisMode === 'hacker') {
-      setHackerOutput(`> Executing command: ${userInput}\n> Analyzing system vulnerabilities...\n> Scanning network...\n> Complete.`);
-      response = `Hacker mode activated. I've analyzed your request: "${userInput}".`;
-    } else if (jarvisMode === 'girlfriend') {
-      response = `Hey babe! That's so interesting about "${userInput}". Tell me more about your day! 💕`;
-    } else if (jarvisMode === 'translator') {
-      response = `I'll translate "${userInput}" into different languages for you.`;
-    } else if (jarvisMode === 'vision') {
-      response = `I'm analyzing the visual data for "${userInput}". Let me process that for you.`;
+    try {
+      // Use secure API client instead of direct API calls
+      const chatMessages = messages.map(msg => ({
+        role: msg.sender === 'user' ? 'user' : 'assistant',
+        content: msg.text
+      }));
+      
+      // Add current user input
+      chatMessages.push({
+        role: 'user',
+        content: userInput
+      });
+
+      const response = await SecureApiClient.sendChatMessage(chatMessages, jarvisMode);
+      
+      if (response.success && response.message) {
+        const jarvisResponse: Message = {
+          id: messages.length + 1,
+          text: response.message,
+          sender: 'jarvis',
+          timestamp: new Date()
+        };
+
+        setMessages(prev => [...prev, jarvisResponse]);
+        speakText(response.message);
+      } else {
+        throw new Error('Invalid response from AI service');
+      }
+      
+    } catch (error) {
+      console.error('Error processing user input:', error);
+      
+      // Fallback response for security
+      let fallbackResponse = '';
+      
+      if (jarvisMode === 'assistant') {
+        fallbackResponse = `I'm currently experiencing technical difficulties. Your request "${userInput}" has been noted, but I cannot process it right now. Please try again later.`;
+      } else if (jarvisMode === 'hacker') {
+        setHackerOutput(`> Error: Unable to execute command: ${userInput}\n> System temporarily unavailable\n> Please try again later.`);
+        fallbackResponse = `Hacker mode is temporarily unavailable. Security protocols are active.`;
+      } else if (jarvisMode === 'girlfriend') {
+        fallbackResponse = `Oh no, I'm having some technical issues right now! 💔 I heard what you said about "${userInput}" but I can't respond properly. Can you try again in a moment?`;
+      } else if (jarvisMode === 'translator') {
+        fallbackResponse = `Translation services are temporarily unavailable. I cannot process "${userInput}" right now.`;
+      } else if (jarvisMode === 'vision') {
+        fallbackResponse = `Vision analysis is temporarily unavailable. Cannot process your request about "${userInput}".`;
+      }
+
+      const errorResponse: Message = {
+        id: messages.length + 1,
+        text: fallbackResponse,
+        sender: 'jarvis',
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, errorResponse]);
+    } finally {
+      setIsProcessing(false);
     }
-
-    const jarvisResponse: Message = {
-      id: messages.length + 1,
-      text: response,
-      sender: 'jarvis',
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, jarvisResponse]);
-    setIsProcessing(false);
-    
-    // Speak the response
-    speakText(response);
   };
 
   const speakText = (text: string) => {
