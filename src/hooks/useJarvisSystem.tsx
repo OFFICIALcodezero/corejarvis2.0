@@ -1,11 +1,12 @@
-
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { validateHackerCode } from '@/services/hackerModeService';
 import { getApiKey } from '@/utils/apiKeyManager';
 import { AssistantType } from '@/pages/JarvisInterface';
 
 export const useJarvisSystem = () => {
+  const navigate = useNavigate();
   const [mode, setMode] = useState<'chat' | 'hacker'>('chat');
   const [activeMode, setActiveMode] = useState<'normal' | 'voice' | 'face' | 'satellite'>('normal');
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -99,6 +100,12 @@ export const useJarvisSystem = () => {
       return;
     }
     
+    if (id === 'advanced') {
+      // Navigate to dashboard for advanced mode
+      navigate('/dashboard');
+      return;
+    }
+    
     setActiveMode(id as 'normal' | 'voice' | 'face' | 'satellite');
     setMode('chat');
     setHackerModeActive(false);
@@ -132,7 +139,7 @@ export const useJarvisSystem = () => {
     } else {
       setInputMode('text');
     }
-  }, [elevenLabsKey]);
+  }, [elevenLabsKey, navigate]);
 
   const toggleMute = useCallback(() => {
     setIsMuted(!isMuted);
