@@ -1,7 +1,6 @@
 
 import { getOfflineJarvisResponse } from './offlineAIService';
 import { toast } from '@/components/ui/use-toast';
-import { getApiKey } from '@/utils/secureApiKeyManager';
 import { UserPreference } from '@/types/chat';
 import { AssistantType } from '@/pages/JarvisInterface';
 import { supabase } from '@/integrations/supabase/client';
@@ -44,12 +43,16 @@ export function getAssistantModel(assistant: AssistantType): string {
 // Synthesize speech using ElevenLabs API through secure service
 export async function synthesizeSpeech(text: string, voiceId: string): Promise<string> {
   try {
-    const elevenLabsKey = await getApiKey('elevenlabs');
+    // Get ElevenLabs key from database
+    const { data: elevenLabsKey, error } = await supabase.rpc('get_active_api_key', {
+      service_name: 'elevenlabs'
+    });
     
-    if (!elevenLabsKey) {
+    if (error || !elevenLabsKey) {
+      console.error('No ElevenLabs API key available:', error);
       toast({
         title: "Voice Service Unavailable",
-        description: "Voice features are temporarily unavailable.",
+        description: "Voice features are temporarily unavailable. Please add ElevenLabs API key in admin panel.",
         variant: "destructive"
       });
       return '';
@@ -96,6 +99,8 @@ export async function generateAssistantResponse(
   languageCode: string = 'en'
 ): Promise<string> {
   try {
+    console.log('Generating assistant response for:', message);
+
     // Get contextual system prompt based on assistant
     const systemPrompt = getAssistantSystemPrompt(assistant);
     
@@ -123,6 +128,8 @@ export async function generateAssistantResponse(
       });
     }
 
+    console.log('Calling Supabase Edge Function with messages:', messages);
+
     // Use Supabase Edge Function for secure API calls
     const { data, error } = await supabase.functions.invoke('ai-chat', {
       body: {
@@ -133,9 +140,11 @@ export async function generateAssistantResponse(
       }
     });
 
+    console.log('Edge Function response:', { data, error });
+
     if (error) {
       console.error('Secure API error:', error);
-      return `I apologize, but I'm currently unable to process your request. The AI service is temporarily unavailable.`;
+      return `I apologize, but I'm currently unable to process your request. The AI service is temporarily unavailable. Please make sure API keys are configured in the admin panel.`;
     }
 
     return data.message || `I apologize, but I encountered an issue processing your request as ${assistantConfig[assistant].name}. Please try again later.`;

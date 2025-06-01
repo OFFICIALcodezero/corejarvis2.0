@@ -43,21 +43,42 @@ serve(async (req) => {
       )
     }
 
+    // Create a service role client to access the database function
+    const supabaseServiceClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
     // Get Groq API key from database using the secure function
-    const { data: groqApiKey, error: keyError } = await supabaseClient.rpc('get_active_api_key', {
+    const { data: groqApiKey, error: keyError } = await supabaseServiceClient.rpc('get_active_api_key', {
       service_name: 'groq'
     });
 
-    if (keyError || !groqApiKey) {
-      console.error('No Groq API key available:', keyError)
+    console.log('Database query result:', { groqApiKey, keyError });
+
+    if (keyError) {
+      console.error('Database error getting Groq API key:', keyError)
       return new Response(
         JSON.stringify({ 
-          error: 'AI service temporarily unavailable',
-          message: "I'm currently unable to process your request. Please contact your administrator to configure API keys."
+          error: 'AI service configuration error',
+          message: "Unable to retrieve API configuration. Please contact your administrator."
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    if (!groqApiKey) {
+      console.error('No Groq API key available in database')
+      return new Response(
+        JSON.stringify({ 
+          error: 'AI service temporarily unavailable',
+          message: "No API keys are configured. Please contact your administrator to add API keys through the admin panel."
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log('Using Groq API key:', groqApiKey ? 'Key found' : 'No key');
 
     // Prepare system prompt based on mode
     let systemPrompt = "You are JARVIS, an advanced AI assistant."
@@ -98,7 +119,8 @@ serve(async (req) => {
     })
 
     if (!response.ok) {
-      console.error('Groq API error:', response.status, await response.text())
+      const errorText = await response.text()
+      console.error('Groq API error:', response.status, errorText)
       return new Response(
         JSON.stringify({ 
           error: 'AI service error',
@@ -121,7 +143,7 @@ serve(async (req) => {
       )
     }
 
-    // Log the interaction securely (without exposing API keys)
+    // Log the successful interaction
     await supabaseClient
       .from('chat_messages')
       .insert([

@@ -2,7 +2,6 @@
 // Import memory manager functions
 import { loadMemory, updateMemory } from '@/utils/memoryManager';
 import { getAssistantSystemPrompt } from './aiAssistantService';
-import { getApiKey } from '../utils/secureApiKeyManager';
 import { supabase } from '@/integrations/supabase/client';
 
 // Interface for the completion request
@@ -51,6 +50,8 @@ export const createCompletion = async (
   request: CompletionRequest
 ): Promise<CompletionResponse> => {
   try {
+    console.log('Calling AI completion with request:', request);
+
     // Use Supabase Edge Function for secure API calls
     const { data, error } = await supabase.functions.invoke('ai-chat', {
       body: {
@@ -62,6 +63,8 @@ export const createCompletion = async (
         maxTokens: request.maxTokens || 500
       }
     });
+
+    console.log('AI completion response:', { data, error });
 
     if (error) {
       console.error('Secure API error:', error);
