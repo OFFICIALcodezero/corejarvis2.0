@@ -7,6 +7,30 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Secure API Key Service implementation for edge function
+class EdgeSecureApiKeyService {
+  private static readonly STORAGE_KEY = 'jarvis_secure_api_keys';
+
+  static getActiveKey(service: 'groq' | 'elevenlabs' | 'openai'): string | null {
+    try {
+      // In edge function, we'll try environment variables first as fallback
+      if (service === 'groq') {
+        const envKey = Deno.env.get('GROQ_API_KEY');
+        if (envKey) return envKey;
+      }
+      
+      // For production, keys should be managed through the admin panel
+      // This is a fallback approach - in a real deployment, you'd want to
+      // store the admin-managed keys in a secure database table
+      console.log(`No ${service} API key available in environment variables`);
+      return null;
+    } catch (error) {
+      console.error(`Error retrieving ${service} API key:`, error);
+      return null;
+    }
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -43,12 +67,15 @@ serve(async (req) => {
       )
     }
 
-    // Get Groq API key from environment
-    const groqApiKey = Deno.env.get('GROQ_API_KEY')
+    // Get Groq API key from secure service
+    const groqApiKey = EdgeSecureApiKeyService.getActiveKey('groq')
     if (!groqApiKey) {
-      console.error('GROQ_API_KEY not configured')
+      console.error('No Groq API key available')
       return new Response(
-        JSON.stringify({ error: 'AI service temporarily unavailable' }),
+        JSON.stringify({ 
+          error: 'AI service temporarily unavailable',
+          message: "I'm currently unable to process your request. Please contact your administrator to configure API keys."
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -94,7 +121,10 @@ serve(async (req) => {
     if (!response.ok) {
       console.error('Groq API error:', response.status, await response.text())
       return new Response(
-        JSON.stringify({ error: 'AI service error' }),
+        JSON.stringify({ 
+          error: 'AI service error',
+          message: "I encountered an issue processing your request. Please try again in a moment."
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -104,7 +134,10 @@ serve(async (req) => {
 
     if (!assistantMessage) {
       return new Response(
-        JSON.stringify({ error: 'No response from AI service' }),
+        JSON.stringify({ 
+          error: 'No response from AI service',
+          message: "I'm sorry, I couldn't generate a response. Please try again."
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -143,7 +176,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Function error:', error)
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ 
+        error: 'Internal server error',
+        message: "I encountered an unexpected error. Please try again later."
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
