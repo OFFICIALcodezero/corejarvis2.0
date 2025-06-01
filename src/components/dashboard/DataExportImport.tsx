@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Download, Upload, Database, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -52,8 +51,7 @@ const DataExportImport: React.FC = () => {
     } catch (error) {
       console.error('Export error:', error);
       toast("Export Failed", {
-        description: "Could not export data. Please try again.",
-        variant: "destructive"
+        description: "Could not export data. Please try again."
       });
     } finally {
       setIsExporting(false);
@@ -78,7 +76,6 @@ const DataExportImport: React.FC = () => {
         const confirmed = confirm('This will replace all your current Jarvis data. Are you sure you want to continue?');
         
         if (confirmed) {
-          // Import all data
           const data = importedData.data;
           
           if (data.chatHistory) localStorage.setItem('jarvis-chat-history', JSON.stringify(data.chatHistory));
@@ -109,8 +106,7 @@ const DataExportImport: React.FC = () => {
       } catch (error) {
         console.error('Import error:', error);
         toast("Import Failed", {
-          description: "Invalid file format or corrupted data.",
-          variant: "destructive"
+          description: "Invalid file format or corrupted data."
         });
       } finally {
         setIsImporting(false);
