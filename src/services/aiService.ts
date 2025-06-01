@@ -2,7 +2,8 @@
 // Import memory manager functions
 import { loadMemory, updateMemory } from '@/utils/memoryManager';
 import { getAssistantSystemPrompt } from './aiAssistantService';
-import { getApiKey } from '../utils/apiKeyManager';
+import { getApiKey } from '../utils/secureApiKeyManager';
+import { supabase } from '@/integrations/supabase/client';
 
 // Interface for the completion request
 export interface CompletionRequest {
@@ -45,26 +46,32 @@ export const updateUserMemory = (message: string): void => {
   }
 };
 
-// Groq completion function
+// Secure Groq completion function using Supabase Edge Function
 export const createCompletion = async (
   request: CompletionRequest
 ): Promise<CompletionResponse> => {
   try {
-    const apiKey = await getApiKey('groq');
-    
-    if (!apiKey) {
-      console.error('Groq API key not set. Please set it in settings.');
+    // Use Supabase Edge Function for secure API calls
+    const { data, error } = await supabase.functions.invoke('ai-chat', {
+      body: {
+        messages: [
+          { role: 'user', content: request.prompt }
+        ],
+        mode: 'assistant',
+        temperature: request.temperature || 0.7,
+        maxTokens: request.maxTokens || 500
+      }
+    });
+
+    if (error) {
+      console.error('Secure API error:', error);
       return {
-        text: "I'm unable to respond because my API key hasn't been set. Please go to Settings and set your Groq API key.",
+        text: "I'm currently unable to process your request. The AI service is temporarily unavailable.",
       };
     }
 
-    // This is a mock implementation - in a real application, you would call the Groq API
-    console.log('Using API key to call Groq API:', apiKey.substring(0, 3) + '...' + apiKey.substring(apiKey.length - 3));
-    
-    // Simulating a successful response
     return {
-      text: `This is a simulated response. In a real implementation, this would be a response from the Groq API using your API key (starting with ${apiKey.substring(0, 3)}...)`,
+      text: data.message || "I apologize, but I couldn't generate a response at this time.",
       usage: {
         promptTokens: request.prompt.length / 4,
         completionTokens: 50,
@@ -74,7 +81,7 @@ export const createCompletion = async (
   } catch (error) {
     console.error('Error creating completion:', error);
     return {
-      text: "I encountered an error while processing your request. Please check your API key and try again.",
+      text: "I encountered an error while processing your request. Please try again in a moment.",
     };
   }
 };

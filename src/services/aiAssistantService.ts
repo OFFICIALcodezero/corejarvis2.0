@@ -1,16 +1,10 @@
+
 import { getOfflineJarvisResponse } from './offlineAIService';
-
-function handleUserMessage(userMessage: string) {
-  // Use your offline AI instead of external API
-  const reply = getOfflineJarvisResponse(userMessage);
-
-  // Then update your UI or chat state with 'reply'
-}
-
 import { toast } from '@/components/ui/use-toast';
-import { getApiKey } from '@/utils/apiKeyManager';
+import { getApiKey } from '@/utils/secureApiKeyManager';
 import { UserPreference } from '@/types/chat';
 import { AssistantType } from '@/pages/JarvisInterface';
+import { supabase } from '@/integrations/supabase/client';
 
 // Assistant-specific configuration
 export const assistantConfig = {
@@ -47,15 +41,15 @@ export function getAssistantModel(assistant: AssistantType): string {
   return assistantConfig[assistant].model;
 }
 
-// Synthesize speech using ElevenLabs API
+// Synthesize speech using ElevenLabs API through secure service
 export async function synthesizeSpeech(text: string, voiceId: string): Promise<string> {
   try {
     const elevenLabsKey = await getApiKey('elevenlabs');
     
     if (!elevenLabsKey) {
       toast({
-        title: "ElevenLabs API Key Required",
-        description: "Voice features require an ElevenLabs API key.",
+        title: "Voice Service Unavailable",
+        description: "Voice features are temporarily unavailable.",
         variant: "destructive"
       });
       return '';
@@ -94,19 +88,13 @@ export async function synthesizeSpeech(text: string, voiceId: string): Promise<s
   }
 }
 
-// Generate AI response using selected assistant
+// Generate AI response using secure Supabase Edge Function
 export async function generateAssistantResponse(
   message: string,
   chatHistory: Array<{role: 'user' | 'assistant' | 'system', content: string}>,
   assistant: AssistantType = 'jarvis',
   languageCode: string = 'en'
 ): Promise<string> {
-  const groqKey = await getApiKey('groq');
-  
-  if (!groqKey) {
-    return `I need a Groq API key to provide intelligent responses as ${assistantConfig[assistant].name}. Please set one in the settings.`;
-  }
-
   try {
     // Get contextual system prompt based on assistant
     const systemPrompt = getAssistantSystemPrompt(assistant);
@@ -126,7 +114,6 @@ export async function generateAssistantResponse(
         { code: 'fr', name: 'French' },
         { code: 'de', name: 'German' },
         { code: 'it', name: 'Italian' },
-        // ... other languages
       ];
       
       const languageName = supportedLanguages.find(lang => lang.code === languageCode)?.name || languageCode;
@@ -136,39 +123,24 @@ export async function generateAssistantResponse(
       });
     }
 
-    // Get assistant model
-    const model = getAssistantModel(assistant);
-
-    // Call Groq API
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${groqKey}`
-      },
-      body: JSON.stringify({
-        model,
+    // Use Supabase Edge Function for secure API calls
+    const { data, error } = await supabase.functions.invoke('ai-chat', {
+      body: {
         messages,
+        mode: assistant === 'jarvis' ? 'assistant' : assistant,
         temperature: 0.7,
-        max_tokens: 500
-      })
+        maxTokens: 500
+      }
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Groq API error:', errorData);
-      throw new Error(errorData.error?.message || 'Unknown error occurred');
+    if (error) {
+      console.error('Secure API error:', error);
+      return `I apologize, but I'm currently unable to process your request. The AI service is temporarily unavailable.`;
     }
 
-    const data = await response.json();
-    return data.choices[0].message.content.trim();
+    return data.message || `I apologize, but I encountered an issue processing your request as ${assistantConfig[assistant].name}. Please try again later.`;
   } catch (error) {
     console.error('Error generating AI response:', error);
-    toast({
-      title: 'AI Response Error',
-      description: error instanceof Error ? error.message : 'Failed to generate a response',
-      variant: 'destructive'
-    });
     return `I apologize, but I encountered an error processing your request as ${assistantConfig[assistant].name}. Please try again later.`;
   }
 }

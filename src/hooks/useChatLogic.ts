@@ -1,6 +1,7 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
-import { getApiKey } from '../utils/apiKeyManager';
+import { apiKeyExists } from '../utils/secureApiKeyManager';
 import { Message, ConversationContext } from '@/types/chat';
 import { generateAssistantResponse } from '@/services/aiAssistantService';
 import { getUserMemory, updateUserMemory } from '@/services/aiService';
@@ -40,7 +41,6 @@ export const useChatLogic = (
   });
   
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const apiKey = getApiKey('groq');
 
   const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -89,10 +89,13 @@ export const useChatLogic = (
   };
 
   const processUserMessage = async (message: string) => {
-    if (!apiKey && !isSkillCommand(message)) {
+    // Check if API keys are available (for user-facing features only)
+    const hasGroqKey = await apiKeyExists('groq');
+    
+    if (!hasGroqKey && !isSkillCommand(message)) {
       toast({
-        title: "Groq API Key Required",
-        description: "Please set your Groq API key in the controls panel.",
+        title: "Service Temporarily Unavailable",
+        description: "AI features are temporarily unavailable. Our team has been notified.",
         variant: "destructive"
       });
       return;
@@ -115,7 +118,6 @@ export const useChatLogic = (
       // Detect language
       const detectedLanguage = await detectLanguage(message);
       if (detectedLanguage !== selectedLanguage) {
-        // We can use this for auto language switching if needed
         console.log(`Detected language: ${detectedLanguage}, currently using: ${selectedLanguage}`);
       }
       
