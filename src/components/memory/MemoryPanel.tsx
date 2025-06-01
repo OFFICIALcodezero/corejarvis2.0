@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,7 @@ interface MemoryPanelProps {
   hackerMode?: boolean;
 }
 
-export const MemoryPanel: React.FC<MemoryPanelProps> = ({ hackerMode = false }) => {
+const MemoryPanel: React.FC<MemoryPanelProps> = ({ hackerMode = false }) => {
   const [knowledge, setKnowledge] = useState<PersistentKnowledge[]>([]);
   const [memories, setMemories] = useState<Memory[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -134,3 +135,5 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({ hackerMode = false }) 
     </Card>
   );
 };
+
+export default MemoryPanel;
