@@ -5,7 +5,7 @@ import NeuralNetworkPanel from "../ai/NeuralNetworkPanel";
 import { toast } from '@/components/ui/sonner';
 import { Button } from "../ui/button";
 import VoiceAIPanel from "../voice/VoiceAIPanel";
-import { MemoryPanel } from "../memory/MemoryPanel";
+import MemoryPanel from "../memory/MemoryPanel";
 
 const Dashboard: React.FC = () => {
   const [activeSystems, setActiveSystems] = useState({
