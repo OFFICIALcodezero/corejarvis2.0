@@ -166,7 +166,7 @@ const PracticalDashboard = () => {
 
   return (
     <div className="min-h-screen bg-black text-white p-4 font-mono">
-      {/* Header with time */}
+      {/* Header with time - removed advanced mode button */}
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-green-400 mb-2">

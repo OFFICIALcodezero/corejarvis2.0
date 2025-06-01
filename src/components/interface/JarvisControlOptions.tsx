@@ -1,10 +1,10 @@
 
 import React from 'react';
-import { Brain, Mic, Tv } from 'lucide-react';
+import { Brain, Mic, Tv, Settings } from 'lucide-react';
 import { ControlOption } from '@/components/ControlPanel';
 
 interface ControlOptionsProps {
-  activeMode: 'normal' | 'voice' | 'face' | 'hacker' | 'satellite';
+  activeMode: 'normal' | 'voice' | 'face' | 'hacker' | 'satellite' | 'advanced';
   hackerModeActive: boolean;
 }
 
@@ -27,6 +27,12 @@ export const useControlOptions = ({ activeMode, hackerModeActive }: ControlOptio
       label: 'Face Mode',
       icon: <Tv />,
       active: activeMode === 'face' && !hackerModeActive
+    },
+    {
+      id: 'advanced',
+      label: 'Advanced Mode',
+      icon: <Settings />,
+      active: activeMode === 'advanced' && !hackerModeActive
     }
     // Satellite and Hacker modes removed - can only be activated via voice commands
   ];
