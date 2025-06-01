@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -17,7 +16,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/sonner';
-import { getWeatherResponse } from '@/services/weatherService';
+import { getWeatherByCoordinates } from '@/services/weatherService';
 
 interface ToolCard {
   id: string;
@@ -68,11 +67,61 @@ const PracticalDashboard = () => {
 
   const handleWeatherTool = async () => {
     try {
-      toast("Getting weather data...", { description: "Fetching current weather information" });
-      const weatherResponse = await getWeatherResponse("current weather");
-      toast("Weather Update", { description: weatherResponse.text });
+      toast("Getting your location...", { description: "Accessing GPS coordinates" });
+      
+      if (!navigator.geolocation) {
+        toast("Location Error", { description: "Geolocation is not supported by this browser" });
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            const { latitude, longitude } = position.coords;
+            toast("Fetching weather data...", { 
+              description: `Getting weather for your location (${latitude.toFixed(2)}, ${longitude.toFixed(2)})` 
+            });
+            
+            const weatherResponse = await getWeatherByCoordinates(latitude, longitude);
+            
+            const weatherText = `Weather in ${weatherResponse.location.name}: ${weatherResponse.current.condition} with ${Math.round(weatherResponse.current.temp)}°C. Humidity: ${weatherResponse.current.humidity}%, Wind: ${weatherResponse.current.windSpeed} km/h`;
+            
+            toast("Weather Update", { 
+              description: weatherText,
+              duration: 6000
+            });
+          } catch (error) {
+            console.error('Weather fetch error:', error);
+            toast("Weather Error", { description: "Could not fetch weather data for your location" });
+          }
+        },
+        (error) => {
+          console.error('Geolocation error:', error);
+          let errorMessage = "Could not access your location";
+          
+          switch(error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = "Location access denied. Please allow location access and try again.";
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = "Location information unavailable.";
+              break;
+            case error.TIMEOUT:
+              errorMessage = "Location request timed out.";
+              break;
+          }
+          
+          toast("Location Error", { description: errorMessage });
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000 // Cache location for 5 minutes
+        }
+      );
     } catch (error) {
-      toast("Weather Error", { description: "Could not fetch weather data" });
+      console.error('Weather tool error:', error);
+      toast("Weather Error", { description: "Could not initialize weather service" });
     }
   };
 
