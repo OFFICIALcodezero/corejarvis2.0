@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import "./App.css";
@@ -6,6 +7,7 @@ import NotFound from "./pages/NotFound";
 import Startup from "./pages/Startup";
 import JarvisInterface from "./pages/JarvisInterface";
 import ImageGeneration from "./pages/ImageGeneration";
+import VideoMaker from "./pages/VideoMaker";
 import JarvisSettings from "./components/JarvisSettings";
 import JarvisModeEnhancer from './components/JarvisModeEnhancer';
 import { JarvisChatProvider } from "./contexts/JarvisChatProvider";

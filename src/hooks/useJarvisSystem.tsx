@@ -100,6 +100,12 @@ export const useJarvisSystem = () => {
       return;
     }
     
+    if (id === 'videos') {
+      // Navigate to video maker page
+      navigate('/video-maker');
+      return;
+    }
+    
     if (id === 'advanced') {
       // Navigate to dashboard for advanced mode
       navigate('/dashboard');

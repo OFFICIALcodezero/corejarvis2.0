@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Brain, Mic, Tv, Settings } from 'lucide-react';
+import { Brain, Mic, Tv, Settings, Video } from 'lucide-react';
 import { ControlOption } from '@/components/ControlPanel';
 
 interface ControlOptionsProps {
@@ -27,6 +27,12 @@ export const useControlOptions = ({ activeMode, hackerModeActive }: ControlOptio
       label: 'Face Mode',
       icon: <Tv />,
       active: activeMode === 'face' && !hackerModeActive
+    },
+    {
+      id: 'videos',
+      label: 'Video Maker',
+      icon: <Video />,
+      active: false
     },
     {
       id: 'advanced',
