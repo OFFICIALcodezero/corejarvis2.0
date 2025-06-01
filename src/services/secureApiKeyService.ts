@@ -4,7 +4,7 @@ import { toast } from '@/components/ui/use-toast';
 
 export interface ApiKeyEntry {
   id: string;
-  service: 'groq' | 'elevenlabs' | 'openai';
+  service: 'groq' | 'elevenlabs' | 'openai' | 'pexels';
   key_value: string;
   label: string;
   is_active: boolean;
@@ -19,7 +19,7 @@ export interface ApiKeyEntry {
 export class SecureApiKeyService {
   // Admin methods for managing keys
   static async addApiKey(
-    service: 'groq' | 'elevenlabs' | 'openai', 
+    service: 'groq' | 'elevenlabs' | 'openai' | 'pexels', 
     key: string, 
     label: string, 
     maxUsage: number = 1000, 
@@ -114,7 +114,7 @@ export class SecureApiKeyService {
   }
 
   // User methods for accessing keys (internal use only)
-  static async getActiveKey(service: 'groq' | 'elevenlabs' | 'openai'): Promise<string | null> {
+  static async getActiveKey(service: 'groq' | 'elevenlabs' | 'openai' | 'pexels'): Promise<string | null> {
     try {
       // Use the database function to get and update usage
       const { data, error } = await supabase.rpc('get_active_api_key', {

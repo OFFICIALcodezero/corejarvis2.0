@@ -13,7 +13,7 @@ import { Plus, Trash2, Key, LogOut, Shield, AlertTriangle } from 'lucide-react';
 const AdminApiKeyManager: React.FC = () => {
   const [keys, setKeys] = useState<ApiKeyEntry[]>([]);
   const [newKey, setNewKey] = useState({
-    service: 'groq' as 'groq' | 'elevenlabs' | 'openai',
+    service: 'groq' as 'groq' | 'elevenlabs' | 'openai' | 'pexels',
     key: '',
     label: '',
     maxUsage: 1000,
@@ -176,7 +176,7 @@ const AdminApiKeyManager: React.FC = () => {
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           {Object.entries(usageStats).map(([service, stats]: [string, any]) => (
             <Card key={service} className="bg-black/40 border-green-500/30">
               <CardHeader className="pb-2">
@@ -213,6 +213,7 @@ const AdminApiKeyManager: React.FC = () => {
                     <SelectItem value="groq">Groq</SelectItem>
                     <SelectItem value="elevenlabs">ElevenLabs</SelectItem>
                     <SelectItem value="openai">OpenAI</SelectItem>
+                    <SelectItem value="pexels">Pexels</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -222,7 +223,7 @@ const AdminApiKeyManager: React.FC = () => {
                 <Input
                   value={newKey.label}
                   onChange={(e) => setNewKey({...newKey, label: e.target.value})}
-                  placeholder="e.g., Primary Groq Key"
+                  placeholder="e.g., Primary Pexels Key"
                   className="bg-gray-900/50 border-blue-500/30 text-white"
                 />
               </div>

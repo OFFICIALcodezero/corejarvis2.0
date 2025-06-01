@@ -2,7 +2,7 @@
 import { SecureApiKeyService } from '@/services/secureApiKeyService';
 
 // Updated API key manager that uses the secure database service
-export type ApiServiceType = 'groq' | 'elevenlabs' | 'openai';
+export type ApiServiceType = 'groq' | 'elevenlabs' | 'openai' | 'pexels';
 
 /**
  * Check if an API key exists for a service (for user-facing features)
