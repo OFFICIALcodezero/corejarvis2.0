@@ -26,13 +26,21 @@ import {
   Key,
   Activity,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Moon,
+  Database,
+  Zap
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/sonner';
 import { getWeatherByCoordinates } from '@/services/weatherService';
+import { useSentimentAnalysis } from '@/hooks/useSentimentAnalysis';
+import { useAutoTasking } from '@/hooks/useAutoTasking';
+import { useSleepMode } from '@/hooks/useSleepMode';
+import JarvisSearchBar from './JarvisSearchBar';
+import DataExportImport from './DataExportImport';
 
 interface ToolCard {
   id: string;
@@ -58,6 +66,11 @@ const PracticalDashboard = () => {
   const [currentDate, setCurrentDate] = useState('');
   const [batteryLevel, setBatteryLevel] = useState<number | null>(null);
   const [categories, setCategories] = useState<ToolCategory[]>([]);
+  
+  // New hooks for AI features
+  const { analyzeSentiment, currentMood } = useSentimentAnalysis();
+  const { analyzeForPatterns, checkAndTriggerRecurringTasks } = useAutoTasking();
+  const { isSleepMode, sleepMinutes, wakeUp, checkWakeWord, updateSleepTimeout } = useSleepMode();
 
   // Update time every second with proper IST calculation
   useEffect(() => {
@@ -90,6 +103,15 @@ const PracticalDashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Check recurring tasks every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      checkAndTriggerRecurringTasks();
+    }, 60000); // Check every minute
+    
+    return () => clearInterval(interval);
+  }, [checkAndTriggerRecurringTasks]);
+
   // Get battery level
   useEffect(() => {
     if ('getBattery' in navigator) {
@@ -103,6 +125,42 @@ const PracticalDashboard = () => {
       });
     }
   }, []);
+
+  // Apply mood-based UI changes
+  const getMoodStyles = () => {
+    switch (currentMood) {
+      case 'happy':
+        return {
+          primaryColor: 'text-yellow-400',
+          borderColor: 'border-yellow-500/30',
+          bgColor: 'bg-yellow-500/10',
+          animation: 'animate-pulse'
+        };
+      case 'sad':
+        return {
+          primaryColor: 'text-blue-300',
+          borderColor: 'border-blue-500/20',
+          bgColor: 'bg-blue-500/5',
+          animation: ''
+        };
+      case 'angry':
+        return {
+          primaryColor: 'text-red-400',
+          borderColor: 'border-red-500/30',
+          bgColor: 'bg-red-500/10',
+          animation: ''
+        };
+      default:
+        return {
+          primaryColor: 'text-green-400',
+          borderColor: 'border-green-500/30',
+          bgColor: 'bg-green-500/10',
+          animation: ''
+        };
+    }
+  };
+
+  const moodStyles = getMoodStyles();
 
   const handleWeatherTool = async () => {
     try {
@@ -190,6 +248,9 @@ const PracticalDashboard = () => {
       toast("Alarm Set", { 
         description: `Alarm set for ${timeInput} (${Math.round(timeUntilAlarm / 60000)} minutes from now)`
       });
+      
+      // Analyze for patterns
+      analyzeForPatterns(`Alarm at ${timeInput}`);
     } else {
       toast("Invalid Time", { description: "Please enter time in HH:MM format (e.g., 14:30)" });
     }
@@ -218,6 +279,9 @@ const PracticalDashboard = () => {
       });
       localStorage.setItem('jarvis-events', JSON.stringify(events));
       toast("Event Added", { description: `"${title}" scheduled for ${date} at ${time}` });
+      
+      // Analyze for patterns
+      analyzeForPatterns(`${title} on ${date}`, date);
     } else if (action === '2') {
       const events = JSON.parse(localStorage.getItem('jarvis-events') || '[]');
       if (events.length > 0) {
@@ -444,6 +508,14 @@ const PracticalDashboard = () => {
           } else {
             toast("Access Denied", { description: "Voice phrase did not match" });
           }
+          
+          // Check for wake word
+          if (checkWakeWord(said)) {
+            wakeUp();
+          }
+          
+          // Analyze sentiment
+          analyzeSentiment(said);
         };
         
         recognition.onerror = (event: any) => {
@@ -455,6 +527,24 @@ const PracticalDashboard = () => {
     } else {
       toast("Voice Lock", { description: "Speech recognition not supported" });
     }
+  };
+
+  // New AI-powered tools
+  const handleSleepModeSettings = () => {
+    const minutes = prompt(`Sleep mode timeout (current: ${sleepMinutes} minutes):`);
+    if (minutes && !isNaN(parseInt(minutes))) {
+      updateSleepTimeout(parseInt(minutes));
+      toast("Sleep Mode Updated", { 
+        description: `Sleep mode will activate after ${minutes} minutes of inactivity` 
+      });
+    }
+  };
+
+  const handleSearchResult = (result: any) => {
+    toast("Search Result", {
+      description: `Found: ${result.title} - ${result.content.substring(0, 50)}...`,
+      duration: 4000
+    });
   };
 
   // Initialize categories
@@ -607,6 +697,14 @@ const PracticalDashboard = () => {
                   const transcript = event.results[0][0].transcript;
                   toast("Voice Recognized", { description: `You said: "${transcript}"` });
                   
+                  // Check for wake word
+                  if (checkWakeWord(transcript)) {
+                    wakeUp();
+                  }
+                  
+                  // Analyze sentiment
+                  analyzeSentiment(transcript);
+                  
                   if (transcript.toLowerCase().includes('weather')) {
                     handleWeatherTool();
                   } else if (transcript.toLowerCase().includes('time')) {
@@ -627,6 +725,14 @@ const PracticalDashboard = () => {
                 toast("Voice Assistant", { description: "Voice recognition not supported in this browser" });
               }
             },
+            status: 'active'
+          },
+          {
+            id: 'sleep-mode',
+            name: 'Sleep Mode Settings',
+            description: `Auto-sleep after ${sleepMinutes} min`,
+            icon: Moon,
+            action: handleSleepModeSettings,
             status: 'active'
           }
         ]
@@ -706,13 +812,27 @@ const PracticalDashboard = () => {
             icon: Mic,
             action: handleVoiceLock,
             status: 'active'
+          },
+          {
+            id: 'data-management',
+            name: 'Data Export/Import',
+            description: 'Backup and restore data',
+            icon: Database,
+            action: () => {
+              // This will be shown in the UI below
+              toast("Data Management", { 
+                description: "Scroll down to access export/import tools",
+                duration: 3000
+              });
+            },
+            status: 'active'
           }
         ]
       }
     ];
 
     setCategories(initialCategories);
-  }, [batteryLevel, currentTime]);
+  }, [batteryLevel, currentTime, sleepMinutes]);
 
   const toggleCategory = (categoryId: string) => {
     setCategories(prev => prev.map(cat => 
@@ -722,26 +842,49 @@ const PracticalDashboard = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-500/20 text-green-400 border-green-500/30';
+      case 'active': return `${moodStyles.bgColor} ${moodStyles.primaryColor} ${moodStyles.borderColor}`;
       case 'beta': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
       case 'coming-soon': return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
-      default: return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+      default: return `${moodStyles.bgColor} ${moodStyles.primaryColor} ${moodStyles.borderColor}`;
     }
   };
 
+  // Sleep mode overlay
+  if (isSleepMode) {
+    return (
+      <div className="min-h-screen bg-black text-white font-mono flex items-center justify-center">
+        <div className="text-center space-y-6">
+          <div className="animate-pulse">
+            <Moon className="h-16 w-16 text-blue-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-blue-400">Sleep Mode</h2>
+            <p className="text-gray-400 mt-2">Say "Jarvis, wake up" to activate</p>
+          </div>
+          <div className="text-xs text-gray-500">
+            {currentTime} | Last activity: {new Date().toLocaleTimeString()}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-black text-white p-4 font-mono">
-      {/* Header with time */}
+    <div className={`min-h-screen bg-black text-white p-4 font-mono ${moodStyles.animation}`}>
+      {/* Header with time and search */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-green-400 mb-2">
+          <h1 className={`text-3xl font-bold ${moodStyles.primaryColor} mb-2`}>
             J.A.R.V.I.S
           </h1>
           <p className="text-sm text-gray-400">Personal AI Assistant Dashboard</p>
+          {currentMood !== 'neutral' && (
+            <p className={`text-xs ${moodStyles.primaryColor} mt-1`}>
+              Mood detected: {currentMood} • UI adapted
+            </p>
+          )}
         </div>
         
-        <div className="text-right">
-          <div className="text-2xl font-mono text-green-400 mb-1">
+        <div className="text-right space-y-2">
+          <div className={`text-2xl font-mono ${moodStyles.primaryColor} mb-1`}>
             {currentTime} IST
           </div>
           <div className="text-sm text-gray-400">
@@ -750,15 +893,20 @@ const PracticalDashboard = () => {
         </div>
       </div>
 
+      {/* Search Bar */}
+      <div className="mb-6 flex justify-center">
+        <JarvisSearchBar onResultClick={handleSearchResult} />
+      </div>
+
       {/* System Status */}
       <div className="mb-6">
-        <div className="flex items-center space-x-4 text-sm">
+        <div className="flex items-center space-x-4 text-sm flex-wrap">
           <span className="text-gray-400">System Status:</span>
-          <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+          <Badge className={getStatusColor('active')}>
             ● ONLINE
           </Badge>
           <span className="text-gray-400">|</span>
-          <span className="text-blue-400">Neural Networks Active</span>
+          <span className={moodStyles.primaryColor}>Neural Networks Active</span>
           <span className="text-gray-400">|</span>
           <span className="text-green-400">All Systems Operational</span>
           {batteryLevel !== null && (
@@ -767,6 +915,8 @@ const PracticalDashboard = () => {
               <span className="text-blue-400">Battery: {batteryLevel}%</span>
             </>
           )}
+          <span className="text-gray-400">|</span>
+          <span className="text-purple-400">Mood: {currentMood}</span>
         </div>
       </div>
 
@@ -784,16 +934,16 @@ const PracticalDashboard = () => {
               >
                 <div className="flex items-center space-x-2">
                   {category.collapsed ? (
-                    <ChevronRight className="h-4 w-4 text-green-400" />
+                    <ChevronRight className={`h-4 w-4 ${moodStyles.primaryColor}`} />
                   ) : (
-                    <ChevronDown className="h-4 w-4 text-green-400" />
+                    <ChevronDown className={`h-4 w-4 ${moodStyles.primaryColor}`} />
                   )}
-                  <CategoryIcon className="h-5 w-5 text-green-400" />
-                  <h2 className="text-lg font-semibold text-green-400 group-hover:text-green-300">
+                  <CategoryIcon className={`h-5 w-5 ${moodStyles.primaryColor}`} />
+                  <h2 className={`text-lg font-semibold ${moodStyles.primaryColor} group-hover:text-green-300`}>
                     {category.name}
                   </h2>
                 </div>
-                <div className="flex-1 h-px bg-green-500/20"></div>
+                <div className={`flex-1 h-px ${moodStyles.borderColor.replace('border-', 'bg-').replace('/30', '/20')}`}></div>
               </div>
 
               {/* Category Tools */}
@@ -805,7 +955,7 @@ const PracticalDashboard = () => {
                     return (
                       <Card 
                         key={tool.id}
-                        className="bg-gray-900/50 border-green-500/20 hover:border-green-500/40 hover:bg-gray-800/60 transition-all duration-300 cursor-pointer group"
+                        className={`bg-gray-900/50 ${moodStyles.borderColor} hover:border-green-500/40 hover:bg-gray-800/60 transition-all duration-300 cursor-pointer group`}
                         onClick={() => {
                           if (tool.route) {
                             navigate(tool.route);
@@ -816,8 +966,8 @@ const PracticalDashboard = () => {
                       >
                         <CardContent className="p-4">
                           <div className="flex flex-col items-center text-center space-y-3">
-                            <div className="p-3 rounded-lg bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
-                              <IconComponent className="h-6 w-6 text-green-400" />
+                            <div className={`p-3 rounded-lg ${moodStyles.bgColor} group-hover:bg-green-500/20 transition-colors`}>
+                              <IconComponent className={`h-6 w-6 ${moodStyles.primaryColor}`} />
                             </div>
                             
                             <div>
@@ -847,10 +997,18 @@ const PracticalDashboard = () => {
         })}
       </div>
 
+      {/* Data Management Section */}
+      <div className="mt-8">
+        <DataExportImport />
+      </div>
+
       {/* Footer */}
       <div className="mt-8 pt-4 border-t border-gray-800 text-center text-xs text-gray-500">
         <p>J.A.R.V.I.S. v2.0 | Just A Rather Very Intelligent System</p>
         <p className="mt-1">All systems nominal • Neural networks active • Ready for commands</p>
+        {isSleepMode && (
+          <p className="mt-1 text-blue-400">Sleep mode will activate in {sleepMinutes} minutes of inactivity</p>
+        )}
       </div>
     </div>
   );
