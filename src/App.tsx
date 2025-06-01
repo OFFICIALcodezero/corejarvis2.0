@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import "./App.css";
@@ -21,6 +20,7 @@ import Dashboard from "./components/dashboard/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import JarvisModeSwitcher from "./components/JarvisModeSwitcher";
 import JarvisV2Interface from "./pages/JarvisV2Interface";
+import AdminPanel from "./pages/AdminPanel";
 
 function App() {
   return (
@@ -47,6 +47,7 @@ function App() {
                   <Route path="/image-generation" element={<ImageGeneration />} />
                   <Route path="/images" element={<ImageGeneration />} />
                   <Route path="/settings" element={<JarvisSettings />} />
+                  <Route path="/admin" element={<AdminPanel />} />
                   <Route path="/features" element={<FeaturesOverview />} />
                   <Route path="/satellite" element={<SatelliteSurveillancePage />} />
                   <Route path="/osint" element={<OSINTSearch />} />

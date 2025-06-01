@@ -1,0 +1,309 @@
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { AdminAuthService } from '@/services/adminAuthService';
+import { SecureApiKeyService, ApiKeyEntry } from '@/services/secureApiKeyService';
+import { toast } from './ui/use-toast';
+import { Plus, Trash2, Key, Activity, LogOut, Shield, AlertTriangle } from 'lucide-react';
+
+const AdminApiKeyManager: React.FC = () => {
+  const [keys, setKeys] = useState<ApiKeyEntry[]>([]);
+  const [newKey, setNewKey] = useState({
+    service: 'groq' as 'groq' | 'elevenlabs' | 'openai',
+    key: '',
+    label: '',
+    maxUsage: 1000,
+    expiryDate: ''
+  });
+  const [usageStats, setUsageStats] = useState<any>({});
+
+  useEffect(() => {
+    loadData();
+    const interval = setInterval(loadData, 5000); // Refresh every 5 seconds
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadData = () => {
+    setKeys(SecureApiKeyService.getAllKeys());
+    setUsageStats(SecureApiKeyService.getUsageStats());
+  };
+
+  const handleAddKey = () => {
+    if (!newKey.key || !newKey.label) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    SecureApiKeyService.addApiKey(
+      newKey.service,
+      newKey.key,
+      newKey.label,
+      newKey.maxUsage,
+      newKey.expiryDate || undefined
+    );
+
+    setNewKey({
+      service: 'groq',
+      key: '',
+      label: '',
+      maxUsage: 1000,
+      expiryDate: ''
+    });
+
+    loadData();
+    toast({
+      title: "API Key Added",
+      description: `${newKey.service} key "${newKey.label}" has been added successfully`
+    });
+  };
+
+  const handleDeleteKey = (id: string) => {
+    if (confirm('Are you sure you want to delete this API key?')) {
+      SecureApiKeyService.deleteApiKey(id);
+      loadData();
+      toast({
+        title: "API Key Deleted",
+        description: "The API key has been removed from the system"
+      });
+    }
+  };
+
+  const handleToggleKey = (id: string, currentStatus: boolean) => {
+    SecureApiKeyService.updateApiKey(id, { isActive: !currentStatus });
+    loadData();
+    toast({
+      title: currentStatus ? "Key Deactivated" : "Key Activated",
+      description: `API key has been ${currentStatus ? 'deactivated' : 'activated'}`
+    });
+  };
+
+  const handleCleanup = () => {
+    const removed = SecureApiKeyService.cleanupInactiveKeys();
+    loadData();
+    toast({
+      title: "Cleanup Complete",
+      description: `Removed ${removed} inactive API keys`
+    });
+  };
+
+  const handleLogout = () => {
+    AdminAuthService.logout();
+    window.location.reload();
+  };
+
+  const getStatusColor = (key: ApiKeyEntry) => {
+    if (!key.isActive) return 'text-red-500';
+    if (key.expiryDate && new Date(key.expiryDate) < new Date()) return 'text-orange-500';
+    if (key.usageCount >= key.maxUsage * 0.9) return 'text-yellow-500';
+    return 'text-green-500';
+  };
+
+  const getUsagePercentage = (key: ApiKeyEntry) => {
+    return Math.round((key.usageCount / key.maxUsage) * 100);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black p-6">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center space-x-2">
+            <Shield className="h-8 w-8 text-red-500" />
+            <h1 className="text-3xl font-bold text-red-400">JARVIS Admin Panel</h1>
+          </div>
+          <Button onClick={handleLogout} variant="outline" className="border-red-500/30 text-red-400">
+            <LogOut className="h-4 w-4 mr-2" />
+            Logout
+          </Button>
+        </div>
+
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {Object.entries(usageStats).map(([service, stats]: [string, any]) => (
+            <Card key={service} className="bg-black/40 border-green-500/30">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-green-400 text-lg capitalize">{service} Keys</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Total: {stats.total}</span>
+                  <span className="text-green-400">Active: {stats.active}</span>
+                  <span className="text-red-400">Inactive: {stats.expired}</span>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Add New Key */}
+        <Card className="bg-black/40 border-blue-500/30 mb-6">
+          <CardHeader>
+            <CardTitle className="text-blue-400 flex items-center">
+              <Plus className="h-5 w-5 mr-2" />
+              Add New API Key
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div>
+                <Label className="text-blue-400">Service</Label>
+                <Select value={newKey.service} onValueChange={(value: any) => setNewKey({...newKey, service: value})}>
+                  <SelectTrigger className="bg-gray-900/50 border-blue-500/30 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="groq">Groq</SelectItem>
+                    <SelectItem value="elevenlabs">ElevenLabs</SelectItem>
+                    <SelectItem value="openai">OpenAI</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label className="text-blue-400">Label</Label>
+                <Input
+                  value={newKey.label}
+                  onChange={(e) => setNewKey({...newKey, label: e.target.value})}
+                  placeholder="e.g., Primary Groq Key"
+                  className="bg-gray-900/50 border-blue-500/30 text-white"
+                />
+              </div>
+              
+              <div>
+                <Label className="text-blue-400">API Key</Label>
+                <Input
+                  type="password"
+                  value={newKey.key}
+                  onChange={(e) => setNewKey({...newKey, key: e.target.value})}
+                  placeholder="Enter API key"
+                  className="bg-gray-900/50 border-blue-500/30 text-white font-mono"
+                />
+              </div>
+              
+              <div>
+                <Label className="text-blue-400">Max Usage</Label>
+                <Input
+                  type="number"
+                  value={newKey.maxUsage}
+                  onChange={(e) => setNewKey({...newKey, maxUsage: parseInt(e.target.value) || 1000})}
+                  className="bg-gray-900/50 border-blue-500/30 text-white"
+                />
+              </div>
+              
+              <div className="flex items-end">
+                <Button onClick={handleAddKey} className="w-full bg-blue-600 hover:bg-blue-700">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Key
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* API Keys List */}
+        <Card className="bg-black/40 border-green-500/30">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-green-400 flex items-center">
+              <Key className="h-5 w-5 mr-2" />
+              Managed API Keys
+            </CardTitle>
+            <Button onClick={handleCleanup} variant="outline" size="sm" className="border-orange-500/30 text-orange-400">
+              <Trash2 className="h-4 w-4 mr-2" />
+              Cleanup Inactive
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {keys.length === 0 ? (
+              <div className="text-center py-8 text-gray-400">
+                <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-yellow-500" />
+                <p>No API keys configured</p>
+                <p className="text-sm">Add your first API key above to get started</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {keys.map((key) => (
+                  <div key={key.id} className="p-4 border border-gray-700 rounded-lg">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h4 className="text-white font-medium">{key.label}</h4>
+                        <p className="text-sm text-gray-400 capitalize">{key.service} API Key</p>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button
+                          onClick={() => handleToggleKey(key.id, key.isActive)}
+                          size="sm"
+                          variant="outline"
+                          className={`border-${key.isActive ? 'red' : 'green'}-500/30 text-${key.isActive ? 'red' : 'green'}-400`}
+                        >
+                          {key.isActive ? 'Deactivate' : 'Activate'}
+                        </Button>
+                        <Button
+                          onClick={() => handleDeleteKey(key.id)}
+                          size="sm"
+                          variant="outline"
+                          className="border-red-500/30 text-red-400"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-400">Status: </span>
+                        <span className={getStatusColor(key)}>
+                          {key.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Usage: </span>
+                        <span className="text-white">
+                          {key.usageCount}/{key.maxUsage} ({getUsagePercentage(key)}%)
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Added: </span>
+                        <span className="text-white">
+                          {new Date(key.addedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Last Used: </span>
+                        <span className="text-white">
+                          {key.lastUsed ? new Date(key.lastUsed).toLocaleDateString() : 'Never'}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Usage Progress Bar */}
+                    <div className="mt-2">
+                      <div className="w-full bg-gray-700 rounded-full h-2">
+                        <div 
+                          className={`h-2 rounded-full ${
+                            getUsagePercentage(key) >= 90 ? 'bg-red-500' : 
+                            getUsagePercentage(key) >= 70 ? 'bg-yellow-500' : 'bg-green-500'
+                          }`}
+                          style={{ width: `${getUsagePercentage(key)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default AdminApiKeyManager;

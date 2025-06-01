@@ -1,9 +1,8 @@
 
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import ApiKeyManager from "./ApiKeyManager";
 import { Alert, AlertDescription } from "./ui/alert";
-import { Check } from "lucide-react";
+import { Shield, Info } from "lucide-react";
 
 const JarvisSettings: React.FC = () => {
   return (
@@ -13,19 +12,30 @@ const JarvisSettings: React.FC = () => {
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>API Keys</CardTitle>
+            <CardTitle className="flex items-center">
+              <Shield className="h-5 w-5 mr-2 text-blue-500" />
+              System Configuration
+            </CardTitle>
             <CardDescription>
-              Configure API keys for JARVIS AI services
+              JARVIS system settings and information
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Alert className="mb-4 bg-green-500/10 border-green-500/30">
-              <Check className="h-4 w-4 text-green-500" />
+            <Alert className="mb-4 bg-blue-500/10 border-blue-500/30">
+              <Info className="h-4 w-4 text-blue-500" />
               <AlertDescription>
-                Groq AI API key is pre-configured and ready to use.
+                All API keys and system configurations are managed centrally by your administrator. 
+                You can use all JARVIS features without any additional setup.
               </AlertDescription>
             </Alert>
-            <ApiKeyManager serviceName="ElevenLabs" />
+            
+            <Alert className="bg-green-500/10 border-green-500/30">
+              <Shield className="h-4 w-4 text-green-500" />
+              <AlertDescription>
+                JARVIS AI services are fully configured and operational. 
+                Enjoy seamless AI-powered assistance across all features.
+              </AlertDescription>
+            </Alert>
           </CardContent>
         </Card>
       </div>
