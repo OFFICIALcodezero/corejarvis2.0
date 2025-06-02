@@ -3,8 +3,9 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Mic, MicOff, Volume2, Power, PowerOff } from 'lucide-react';
+import { Mic, MicOff, Volume2, Power, PowerOff, Shield } from 'lucide-react';
 import { useVoiceAI } from '@/hooks/useVoiceAI';
+import { toast } from '@/hooks/use-toast';
 
 interface VoiceAIPanelProps {
   hackerMode?: boolean;
@@ -29,11 +30,27 @@ const VoiceAIPanel: React.FC<VoiceAIPanelProps> = ({ hackerMode = false }) => {
     speak('Voice AI system is online and ready for commands.');
   };
 
-  const handleToggleVoiceAI = () => {
+  const handleToggleVoiceAI = async () => {
     if (isActivated) {
       deactivateVoiceAI();
+      toast({
+        title: "Voice AI Deactivated",
+        description: "Microphone access has been stopped.",
+      });
     } else {
-      activateVoiceAI();
+      await activateVoiceAI();
+      if (isActivated) {
+        toast({
+          title: "Voice AI Activated",
+          description: "Microphone access granted. You can now use voice commands.",
+        });
+      } else {
+        toast({
+          title: "Permission Required",
+          description: "Microphone access is required for voice commands.",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -41,13 +58,14 @@ const VoiceAIPanel: React.FC<VoiceAIPanelProps> = ({ hackerMode = false }) => {
     return (
       <Card className={`${hackerMode ? 'bg-black/40 border-red-500/30' : 'glass-morphism'}`}>
         <CardHeader>
-          <CardTitle className={`${hackerMode ? 'text-red-400' : 'text-jarvis'}`}>
+          <CardTitle className={`${hackerMode ? 'text-red-400' : 'text-jarvis'} flex items-center`}>
+            <Shield className="h-5 w-5 mr-2" />
             Voice AI Unavailable
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-gray-400 text-sm">
-            Voice recognition not supported in this browser
+            Voice recognition not supported in this browser. Please try Chrome, Edge, or Safari.
           </p>
         </CardContent>
       </Card>
@@ -58,7 +76,10 @@ const VoiceAIPanel: React.FC<VoiceAIPanelProps> = ({ hackerMode = false }) => {
     <Card className={`${hackerMode ? 'bg-black/40 border-red-500/30' : 'glass-morphism'}`}>
       <CardHeader>
         <CardTitle className={`flex items-center justify-between ${hackerMode ? 'text-red-400' : 'text-jarvis'}`}>
-          <span>🎙️ Voice AI System</span>
+          <div className="flex items-center">
+            <Shield className="h-5 w-5 mr-2" />
+            <span>Voice AI System</span>
+          </div>
           <div className="flex items-center gap-2">
             <Badge variant={isActivated ? 'default' : 'secondary'}>
               {isActivated ? 'Active' : 'Inactive'}
@@ -163,7 +184,7 @@ const VoiceAIPanel: React.FC<VoiceAIPanelProps> = ({ hackerMode = false }) => {
               Click "Activate Voice AI" to enable voice commands
             </p>
             <p className="text-xs text-gray-500">
-              Microphone access will be requested only when you activate the system
+              Microphone permission will be requested when you activate the system
             </p>
           </div>
         )}

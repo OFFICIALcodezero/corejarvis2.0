@@ -24,13 +24,21 @@ export const useVoiceAI = (): UseVoiceAIReturn => {
   const isSupported = voiceAI.isSupported();
   const micActiveRef = useRef(false);
 
-  // Remove auto-initialization - only activate when user requests
-  const activateVoiceAI = () => {
+  const activateVoiceAI = async () => {
     if (!isSupported || micActiveRef.current) return;
     
-    micActiveRef.current = true;
-    setIsActivated(true);
-    console.log('Voice AI activated by user');
+    // Request microphone permission first
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop()); // Stop the stream immediately
+      
+      micActiveRef.current = true;
+      setIsActivated(true);
+      console.log('Voice AI activated by user with permission');
+    } catch (error) {
+      console.error('Microphone permission denied:', error);
+      setIsActivated(false);
+    }
   };
 
   const deactivateVoiceAI = () => {
