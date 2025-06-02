@@ -20,6 +20,8 @@ interface Task {
   status: 'pending' | 'in_progress' | 'completed';
   due_date: string | null;
   created_at: string;
+  updated_at: string;
+  user_id: string;
 }
 
 const TaskManager: React.FC = () => {
@@ -28,7 +30,7 @@ const TaskManager: React.FC = () => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    priority: 'medium' as const,
+    priority: 'medium' as 'high' | 'medium' | 'low',
     due_date: ''
   });
 
@@ -49,7 +51,12 @@ const TaskManager: React.FC = () => {
         variant: "destructive"
       });
     } else {
-      setTasks(data || []);
+      // Type assertion to ensure priority field matches our interface
+      const typedTasks = (data || []).map(task => ({
+        ...task,
+        priority: task.priority as 'high' | 'medium' | 'low'
+      }));
+      setTasks(typedTasks);
     }
   };
 
@@ -183,7 +190,7 @@ const TaskManager: React.FC = () => {
               </div>
               <div>
                 <Label htmlFor="priority">Priority</Label>
-                <Select value={formData.priority} onValueChange={(value) => setFormData({ ...formData, priority: value as Task['priority'] })}>
+                <Select value={formData.priority} onValueChange={(value: 'high' | 'medium' | 'low') => setFormData({ ...formData, priority: value })}>
                   <SelectTrigger className="bg-black/30 border-white/20 text-white">
                     <SelectValue />
                   </SelectTrigger>
