@@ -6,7 +6,7 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { AdminAuthService } from '@/services/adminAuthService';
 import { SecureApiKeyService, ApiKeyEntry } from '@/services/secureApiKeyService';
-import { toast } from './ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { Plus, Trash2, Key, LogOut, Shield, AlertTriangle } from 'lucide-react';
 
 const AdminApiKeyManager: React.FC = () => {
@@ -24,7 +24,7 @@ const AdminApiKeyManager: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 10000); // Refresh every 10 seconds
+    const interval = setInterval(loadData, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -49,10 +49,31 @@ const AdminApiKeyManager: React.FC = () => {
   };
 
   const handleAddKey = async () => {
-    if (!newKey.key || !newKey.label) {
+    console.log('Adding key with data:', newKey);
+    
+    // Validate required fields
+    if (!newKey.key.trim()) {
       toast({
-        title: "Error",
-        description: "Please fill in all required fields",
+        title: "Validation Error",
+        description: "API Key is required",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!newKey.label.trim()) {
+      toast({
+        title: "Validation Error", 
+        description: "Label is required",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (newKey.maxUsage <= 0) {
+      toast({
+        title: "Validation Error",
+        description: "Max usage must be greater than 0",
         variant: "destructive"
       });
       return;
@@ -61,15 +82,20 @@ const AdminApiKeyManager: React.FC = () => {
     setIsAddingKey(true);
 
     try {
+      console.log('Calling SecureApiKeyService.addApiKey...');
+      
       const success = await SecureApiKeyService.addApiKey(
         newKey.service,
-        newKey.key,
-        newKey.label,
+        newKey.key.trim(),
+        newKey.label.trim(),
         newKey.maxUsage,
         newKey.expiryDate || undefined
       );
 
+      console.log('Add key result:', success);
+
       if (success) {
+        // Reset form
         setNewKey({
           service: 'groq',
           key: '',
@@ -78,10 +104,12 @@ const AdminApiKeyManager: React.FC = () => {
           expiryDate: ''
         });
 
+        // Reload data
         await loadData();
+        
         toast({
-          title: "API Key Added",
-          description: `${newKey.service} key "${newKey.label}" has been added successfully`
+          title: "Success",
+          description: `${newKey.service} API key "${newKey.label}" has been added successfully`
         });
       } else {
         toast({
@@ -94,7 +122,7 @@ const AdminApiKeyManager: React.FC = () => {
       console.error('Error adding key:', error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred while adding the API key.",
+        description: `An unexpected error occurred: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
     } finally {
@@ -233,8 +261,12 @@ const AdminApiKeyManager: React.FC = () => {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               <div>
-                <Label className="text-blue-400">Service</Label>
-                <Select value={newKey.service} onValueChange={(value: any) => setNewKey({...newKey, service: value})}>
+                <Label className="text-blue-400">Service *</Label>
+                <Select 
+                  value={newKey.service} 
+                  onValueChange={(value: any) => setNewKey({...newKey, service: value})}
+                  disabled={isAddingKey}
+                >
                   <SelectTrigger className="bg-gray-900/50 border-blue-500/30 text-white">
                     <SelectValue />
                   </SelectTrigger>
@@ -249,23 +281,25 @@ const AdminApiKeyManager: React.FC = () => {
               </div>
               
               <div>
-                <Label className="text-blue-400">Label</Label>
+                <Label className="text-blue-400">Label *</Label>
                 <Input
                   value={newKey.label}
                   onChange={(e) => setNewKey({...newKey, label: e.target.value})}
                   placeholder="e.g., Primary Groq Key"
                   className="bg-gray-900/50 border-blue-500/30 text-white"
+                  disabled={isAddingKey}
                 />
               </div>
               
               <div>
-                <Label className="text-blue-400">API Key</Label>
+                <Label className="text-blue-400">API Key *</Label>
                 <Input
                   type="password"
                   value={newKey.key}
                   onChange={(e) => setNewKey({...newKey, key: e.target.value})}
                   placeholder="Enter API key"
                   className="bg-gray-900/50 border-blue-500/30 text-white font-mono"
+                  disabled={isAddingKey}
                 />
               </div>
               
@@ -276,14 +310,16 @@ const AdminApiKeyManager: React.FC = () => {
                   value={newKey.maxUsage}
                   onChange={(e) => setNewKey({...newKey, maxUsage: parseInt(e.target.value) || 1000})}
                   className="bg-gray-900/50 border-blue-500/30 text-white"
+                  min="1"
+                  disabled={isAddingKey}
                 />
               </div>
               
               <div className="flex items-end">
                 <Button 
                   onClick={handleAddKey} 
-                  disabled={isAddingKey || !newKey.key || !newKey.label}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                  disabled={isAddingKey || !newKey.key.trim() || !newKey.label.trim()}
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isAddingKey ? (
                     <div className="flex items-center">
