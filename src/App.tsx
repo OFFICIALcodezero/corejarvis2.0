@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
@@ -33,24 +33,22 @@ function App() {
           <AuthProvider>
             <Toaster />
             <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/main" element={<MainPage />} />
-                <Route path="/interface" element={<JarvisInterface />} />
-                <Route path="/v2" element={<JarvisV2Interface />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/image-generation" element={<ImageGeneration />} />
-                <Route path="/satellite" element={<SatelliteSurveillance />} />
-                <Route path="/features" element={<FeaturesOverview />} />
-                <Route path="/osint" element={<OSINTSearch />} />
-                <Route path="/video-maker" element={<VideoMaker />} />
-                <Route path="/admin" element={<AdminPanel />} />
-                <Route path="/startup" element={<Startup />} />
-                <Route path="/dashboard" element={<JarvisProDashboard />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/main" element={<MainPage />} />
+              <Route path="/interface" element={<JarvisInterface />} />
+              <Route path="/v2" element={<JarvisV2Interface />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/image-generation" element={<ImageGeneration />} />
+              <Route path="/satellite" element={<SatelliteSurveillance />} />
+              <Route path="/features" element={<FeaturesOverview />} />
+              <Route path="/osint" element={<OSINTSearch />} />
+              <Route path="/video-maker" element={<VideoMaker />} />
+              <Route path="/admin" element={<AdminPanel />} />
+              <Route path="/startup" element={<Startup />} />
+              <Route path="/dashboard" element={<JarvisProDashboard />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
           </AuthProvider>
         </TooltipProvider>
       </ErrorBoundary>
