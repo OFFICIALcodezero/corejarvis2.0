@@ -51,10 +51,11 @@ const TaskManager: React.FC = () => {
         variant: "destructive"
       });
     } else {
-      // Type assertion to ensure priority field matches our interface
+      // Type assertion to ensure fields match our interface
       const typedTasks = (data || []).map(task => ({
         ...task,
-        priority: task.priority as 'high' | 'medium' | 'low'
+        priority: task.priority as 'high' | 'medium' | 'low',
+        status: task.status as 'pending' | 'in_progress' | 'completed'
       }));
       setTasks(typedTasks);
     }
