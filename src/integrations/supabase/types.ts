@@ -126,6 +126,42 @@ export type Database = {
         }
         Relationships: []
       }
+      business_tasks: {
+        Row: {
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string | null
+          status: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           content: string
@@ -149,6 +185,45 @@ export type Database = {
           role?: string
           session_id?: string | null
           timestamp?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      clients: {
+        Row: {
+          company: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          project_notes: string | null
+          status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          project_notes?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          project_notes?: string | null
+          status?: string | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -286,6 +361,45 @@ export type Database = {
           id?: string
           scan_results?: Json | null
           timestamp?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      email_threads: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_draft: boolean | null
+          recipient: string
+          sender: string
+          status: string | null
+          subject: string
+          thread_id: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_draft?: boolean | null
+          recipient: string
+          sender: string
+          status?: string | null
+          subject: string
+          thread_id?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_draft?: boolean | null
+          recipient?: string
+          sender?: string
+          status?: string | null
+          subject?: string
+          thread_id?: string | null
           user_id?: string
         }
         Relationships: []
@@ -475,6 +589,243 @@ export type Database = {
         }
         Relationships: []
       }
+      jarvis_clients: {
+        Row: {
+          company: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          project_notes: string | null
+          status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          project_notes?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          project_notes?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      jarvis_emails: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_draft: boolean | null
+          recipient: string
+          sender: string
+          status: string | null
+          subject: string
+          thread_id: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_draft?: boolean | null
+          recipient: string
+          sender: string
+          status?: string | null
+          subject: string
+          thread_id?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_draft?: boolean | null
+          recipient?: string
+          sender?: string
+          status?: string | null
+          subject?: string
+          thread_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      jarvis_meetings: {
+        Row: {
+          attendees: string[] | null
+          created_at: string
+          description: string | null
+          end_time: string
+          id: string
+          meeting_notes: string | null
+          start_time: string
+          status: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attendees?: string[] | null
+          created_at?: string
+          description?: string | null
+          end_time: string
+          id?: string
+          meeting_notes?: string | null
+          start_time: string
+          status?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attendees?: string[] | null
+          created_at?: string
+          description?: string | null
+          end_time?: string
+          id?: string
+          meeting_notes?: string | null
+          start_time?: string
+          status?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      jarvis_news_cache: {
+        Row: {
+          category: string
+          data: Json
+          id: string
+          last_updated: string
+        }
+        Insert: {
+          category: string
+          data: Json
+          id?: string
+          last_updated?: string
+        }
+        Update: {
+          category?: string
+          data?: Json
+          id?: string
+          last_updated?: string
+        }
+        Relationships: []
+      }
+      jarvis_news_favorites: {
+        Row: {
+          category: string
+          id: string
+          saved_at: string
+          source: string
+          title: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          id?: string
+          saved_at?: string
+          source: string
+          title: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          id?: string
+          saved_at?: string
+          source?: string
+          title?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      jarvis_social_captions: {
+        Row: {
+          created_at: string
+          generated_caption: string
+          id: string
+          platform: string
+          tone: string
+          topic: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          generated_caption: string
+          id?: string
+          platform: string
+          tone: string
+          topic: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          generated_caption?: string
+          id?: string
+          platform?: string
+          tone?: string
+          topic?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      jarvis_tasks: {
+        Row: {
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string | null
+          status: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       knowledge_chunks: {
         Row: {
           content: string
@@ -501,6 +852,48 @@ export type Database = {
           id?: string
           tags?: string[] | null
           title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      meetings: {
+        Row: {
+          attendees: string[] | null
+          created_at: string
+          description: string | null
+          end_time: string
+          id: string
+          meeting_notes: string | null
+          start_time: string
+          status: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attendees?: string[] | null
+          created_at?: string
+          description?: string | null
+          end_time: string
+          id?: string
+          meeting_notes?: string | null
+          start_time: string
+          status?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attendees?: string[] | null
+          created_at?: string
+          description?: string | null
+          end_time?: string
+          id?: string
+          meeting_notes?: string | null
+          start_time?: string
+          status?: string | null
+          title?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -782,6 +1175,36 @@ export type Database = {
           prompt?: string
           reflection_date?: string | null
           response?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      social_captions: {
+        Row: {
+          created_at: string
+          generated_caption: string
+          id: string
+          platform: string
+          tone: string
+          topic: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          generated_caption: string
+          id?: string
+          platform: string
+          tone: string
+          topic: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          generated_caption?: string
+          id?: string
+          platform?: string
+          tone?: string
+          topic?: string
           user_id?: string
         }
         Relationships: []
