@@ -1,10 +1,9 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
 export interface ApiKeyEntry {
   id: string;
-  service: 'groq' | 'elevenlabs' | 'openai' | 'pexels';
+  service: 'groq' | 'elevenlabs' | 'openai' | 'pexels' | 'stability';
   key_value: string;
   label: string;
   is_active: boolean;
@@ -19,7 +18,7 @@ export interface ApiKeyEntry {
 export class SecureApiKeyService {
   // Admin methods for managing keys
   static async addApiKey(
-    service: 'groq' | 'elevenlabs' | 'openai' | 'pexels', 
+    service: 'groq' | 'elevenlabs' | 'openai' | 'pexels' | 'stability', 
     key: string, 
     label: string, 
     maxUsage: number = 1000, 
@@ -105,7 +104,7 @@ export class SecureApiKeyService {
       // Type assertion to ensure service field matches our union type
       return (data || []).map(key => ({
         ...key,
-        service: key.service as 'groq' | 'elevenlabs' | 'openai'
+        service: key.service as 'groq' | 'elevenlabs' | 'openai' | 'pexels' | 'stability'
       }));
     } catch (error) {
       console.error('Error fetching API keys:', error);
@@ -114,7 +113,7 @@ export class SecureApiKeyService {
   }
 
   // User methods for accessing keys (internal use only)
-  static async getActiveKey(service: 'groq' | 'elevenlabs' | 'openai' | 'pexels'): Promise<string | null> {
+  static async getActiveKey(service: 'groq' | 'elevenlabs' | 'openai' | 'pexels' | 'stability'): Promise<string | null> {
     try {
       // Use the database function to get and update usage
       const { data, error } = await supabase.rpc('get_active_api_key', {
@@ -143,9 +142,20 @@ export class SecureApiKeyService {
   private static handleNoValidKeys(service: string): void {
     console.error(`No valid ${service} API keys available`);
     
+    // Map service to user-friendly interface names
+    const serviceInterfaceMap: { [key: string]: string } = {
+      'groq': 'Chat Interface',
+      'openai': 'Chat Interface', 
+      'elevenlabs': 'Voice Interface',
+      'pexels': 'Video Maker',
+      'stability': 'Image Generation'
+    };
+    
+    const interfaceName = serviceInterfaceMap[service] || service;
+    
     toast({
       title: "API Service Unavailable",
-      description: `No valid ${service} API keys available. Please contact your administrator.`,
+      description: `${interfaceName} features require ${service} API keys. Please contact your administrator or configure keys in the admin panel.`,
       variant: "destructive"
     });
   }

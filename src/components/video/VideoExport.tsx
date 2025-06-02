@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useVideoMaker } from '@/contexts/VideoMakerContext';
 import { Download, Share2, Play, AlertCircle } from 'lucide-react';
@@ -38,8 +37,26 @@ const VideoExport: React.FC = () => {
       clearInterval(interval);
       setExportProgress(100);
       
-      // In a real implementation, this would be the actual compiled video URL
-      setExportedVideoUrl('https://example.com/compiled-video.mp4');
+      // Create a mock video blob for download
+      const canvas = document.createElement('canvas');
+      canvas.width = 1920;
+      canvas.height = 1080;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = '#8B5CF6';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'white';
+        ctx.font = '48px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('JARVIS Video Export', canvas.width / 2, canvas.height / 2);
+      }
+      
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          setExportedVideoUrl(url);
+        }
+      }, 'video/webm');
       
       toast({
         title: "Export Complete!",
@@ -58,11 +75,37 @@ const VideoExport: React.FC = () => {
   };
 
   const handleDownload = () => {
-    // In a real implementation, this would trigger the actual download
-    toast({
-      title: "Download Started",
-      description: "Your video download will begin shortly.",
-    });
+    if (exportedVideoUrl) {
+      const link = document.createElement('a');
+      link.href = exportedVideoUrl;
+      link.download = `jarvis-video-${Date.now()}.webm`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Download Started",
+        description: "Your video download has started.",
+      });
+    } else {
+      // Fallback: create a simple text file as placeholder
+      const textContent = `JARVIS Video Project\nClips: ${selectedClips.length}\nDuration: ${Math.round(getTotalDuration())}s\nExported: ${new Date().toISOString()}`;
+      const blob = new Blob([textContent], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `jarvis-video-project-${Date.now()}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Project Info Downloaded",
+        description: "Video project information has been downloaded.",
+      });
+    }
   };
 
   const handleShare = () => {
