@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useVideoMaker } from '@/contexts/VideoMakerContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Play, Plus, AlertCircle } from 'lucide-react';
+import { Search, Play, Plus, AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
 const VideoSearch: React.FC = () => {
@@ -33,13 +33,25 @@ const VideoSearch: React.FC = () => {
     setError(null);
 
     try {
+      console.log('Starting video search for:', searchQuery);
+      
       const { data, error } = await supabase.functions.invoke('pexels-video-search', {
         body: { query: searchQuery, per_page: 15 }
       });
 
-      if (error) throw error;
+      console.log('Search response:', { data, error });
 
-      if (data.videos && data.videos.length > 0) {
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Failed to search videos');
+      }
+
+      if (data?.error) {
+        console.error('API error:', data.error);
+        throw new Error(data.error);
+      }
+
+      if (data?.videos && data.videos.length > 0) {
         setSearchResults(data.videos);
         toast({
           title: "Videos Found",
@@ -48,13 +60,19 @@ const VideoSearch: React.FC = () => {
       } else {
         setSearchResults([]);
         setError('No videos found for your search query. Try different keywords.');
+        toast({
+          title: "No Results",
+          description: "No videos found. Try different search terms.",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error('Search error:', error);
-      setError('Failed to search videos. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to search videos';
+      setError(errorMessage);
       toast({
         title: "Search Error",
-        description: "Failed to search videos. Please try again.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -75,11 +93,6 @@ const VideoSearch: React.FC = () => {
     return video.video_pictures?.[0]?.picture || '/placeholder.svg';
   };
 
-  const getVideoFile = (video: any, quality = 'hd') => {
-    const file = video.video_files?.find(f => f.quality === quality) || video.video_files?.[0];
-    return file?.link;
-  };
-
   return (
     <div className="space-y-6">
       {/* Search Input */}
@@ -90,17 +103,22 @@ const VideoSearch: React.FC = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              onKeyPress={(e) => e.key === 'Enter' && !isSearching && handleSearch()}
               placeholder="Search for video clips (e.g., nature, business, technology)"
               className="w-full bg-black/20 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none"
+              disabled={isSearching}
             />
           </div>
           <button
             onClick={handleSearch}
-            disabled={isSearching}
+            disabled={isSearching || !searchQuery.trim()}
             className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2 rounded-lg flex items-center space-x-2 transition-colors"
           >
-            <Search className="h-4 w-4" />
+            {isSearching ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Search className="h-4 w-4" />
+            )}
             <span>{isSearching ? 'Searching...' : 'Search'}</span>
           </button>
         </div>
@@ -109,7 +127,7 @@ const VideoSearch: React.FC = () => {
       {/* Error Message */}
       {error && (
         <div className="bg-red-900/30 border border-red-800 rounded-lg p-4 flex items-center space-x-2">
-          <AlertCircle className="h-5 w-5 text-red-400" />
+          <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0" />
           <span className="text-red-300">{error}</span>
         </div>
       )}
@@ -128,6 +146,9 @@ const VideoSearch: React.FC = () => {
                     src={getVideoThumbnail(video)}
                     alt={`Video ${video.id}`}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/placeholder.svg';
+                    }}
                   />
                   <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                     <Play className="h-8 w-8 text-white" />
@@ -144,6 +165,7 @@ const VideoSearch: React.FC = () => {
                     <button
                       onClick={() => handleAddClip(video)}
                       className="bg-purple-600 hover:bg-purple-700 p-2 rounded-lg transition-colors"
+                      title="Add to timeline"
                     >
                       <Plus className="h-4 w-4" />
                     </button>
@@ -152,6 +174,15 @@ const VideoSearch: React.FC = () => {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* No search performed yet */}
+      {searchResults.length === 0 && !error && !isSearching && (
+        <div className="glass-morphism neon-purple-border p-8 rounded-2xl text-center">
+          <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <p className="text-gray-400">Enter a search term above to find video clips</p>
+          <p className="text-sm text-gray-500 mt-2">Try keywords like "nature", "business", "technology", or "people"</p>
         </div>
       )}
     </div>

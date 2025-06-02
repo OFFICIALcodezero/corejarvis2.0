@@ -28,8 +28,8 @@ const VideoMakerInterface: React.FC = () => {
   return (
     <div className="space-y-6">
       <VideoMakerSteps />
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-3">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
           {renderCurrentStep()}
         </div>
         <div className="lg:col-span-1">
