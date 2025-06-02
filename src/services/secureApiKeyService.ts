@@ -1,5 +1,6 @@
+
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 export interface ApiKeyEntry {
   id: string;
@@ -25,32 +26,63 @@ export class SecureApiKeyService {
     expiryDate?: string
   ): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('api_keys')
-        .insert({
-          service,
-          key_value: key,
-          label,
-          max_usage: maxUsage,
-          expiry_date: expiryDate,
-          created_by: (await supabase.auth.getUser()).data.user?.id
-        });
+      console.log('SecureApiKeyService.addApiKey called with:', {
+        service,
+        label,
+        maxUsage,
+        keyLength: key.length,
+        expiryDate
+      });
 
-      if (error) {
-        console.error('Error adding API key:', error);
+      // Get current user
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        console.error('Error getting user:', userError);
         return false;
       }
 
+      const insertData = {
+        service,
+        key_value: key,
+        label,
+        max_usage: maxUsage,
+        expiry_date: expiryDate || null,
+        created_by: userData.user?.id || null,
+        is_active: true,
+        usage_count: 0
+      };
+
+      console.log('Inserting data into api_keys table:', {
+        ...insertData,
+        key_value: '[REDACTED]'
+      });
+
+      const { data, error } = await supabase
+        .from('api_keys')
+        .insert(insertData)
+        .select();
+
+      if (error) {
+        console.error('Supabase error adding API key:', error);
+        console.error('Error details:', error.details);
+        console.error('Error hint:', error.hint);
+        console.error('Error message:', error.message);
+        return false;
+      }
+
+      console.log('API key inserted successfully:', data);
       console.log(`Admin added new ${service} API key: ${label}`);
       return true;
     } catch (error) {
-      console.error('Error adding API key:', error);
+      console.error('Exception in addApiKey:', error);
       return false;
     }
   }
 
   static async updateApiKey(id: string, updates: Partial<ApiKeyEntry>): Promise<boolean> {
     try {
+      console.log('Updating API key:', id, updates);
+      
       const { error } = await supabase
         .from('api_keys')
         .update(updates)
@@ -71,6 +103,8 @@ export class SecureApiKeyService {
 
   static async deleteApiKey(id: string): Promise<boolean> {
     try {
+      console.log('Deleting API key:', id);
+      
       const { error } = await supabase
         .from('api_keys')
         .delete()
@@ -91,6 +125,8 @@ export class SecureApiKeyService {
 
   static async getAllKeys(): Promise<ApiKeyEntry[]> {
     try {
+      console.log('Fetching all API keys...');
+      
       const { data, error } = await supabase
         .from('api_keys')
         .select('*')
@@ -101,6 +137,8 @@ export class SecureApiKeyService {
         return [];
       }
 
+      console.log(`Fetched ${data?.length || 0} API keys`);
+      
       // Type assertion to ensure service field matches our union type
       return (data || []).map(key => ({
         ...key,
@@ -115,6 +153,8 @@ export class SecureApiKeyService {
   // User methods for accessing keys (internal use only)
   static async getActiveKey(service: 'groq' | 'elevenlabs' | 'openai' | 'pexels' | 'stability'): Promise<string | null> {
     try {
+      console.log(`Getting active key for service: ${service}`);
+      
       // Use the database function to get and update usage
       const { data, error } = await supabase.rpc('get_active_api_key', {
         service_name: service
@@ -127,10 +167,12 @@ export class SecureApiKeyService {
       }
 
       if (!data) {
+        console.log(`No active key found for ${service}`);
         this.handleNoValidKeys(service);
         return null;
       }
 
+      console.log(`Found active key for ${service}`);
       return data;
     } catch (error) {
       console.error(`Error getting ${service} API key:`, error);

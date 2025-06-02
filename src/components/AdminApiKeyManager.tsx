@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -82,7 +83,10 @@ const AdminApiKeyManager: React.FC = () => {
     setIsAddingKey(true);
 
     try {
-      console.log('Calling SecureApiKeyService.addApiKey...');
+      console.log('Starting API key addition process...');
+      console.log('Service:', newKey.service);
+      console.log('Label:', newKey.label);
+      console.log('Max Usage:', newKey.maxUsage);
       
       const success = await SecureApiKeyService.addApiKey(
         newKey.service,
@@ -92,9 +96,11 @@ const AdminApiKeyManager: React.FC = () => {
         newKey.expiryDate || undefined
       );
 
-      console.log('Add key result:', success);
+      console.log('Add key operation completed. Success:', success);
 
       if (success) {
+        console.log('API key added successfully, resetting form...');
+        
         // Reset form
         setNewKey({
           service: 'groq',
@@ -104,14 +110,18 @@ const AdminApiKeyManager: React.FC = () => {
           expiryDate: ''
         });
 
-        // Reload data
+        console.log('Reloading data...');
+        // Force reload data immediately
         await loadData();
         
         toast({
           title: "Success",
           description: `${newKey.service} API key "${newKey.label}" has been added successfully`
         });
+        
+        console.log('Success toast shown, operation complete');
       } else {
+        console.error('Add key operation returned false');
         toast({
           title: "Error",
           description: "Failed to add API key. Please check your inputs and try again.",
@@ -119,13 +129,14 @@ const AdminApiKeyManager: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Error adding key:', error);
+      console.error('Exception during add key operation:', error);
       toast({
         title: "Error",
         description: `An unexpected error occurred: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
     } finally {
+      console.log('Setting isAddingKey to false');
       setIsAddingKey(false);
     }
   };
@@ -221,7 +232,10 @@ const AdminApiKeyManager: React.FC = () => {
             <Shield className="h-8 w-8 text-red-500" />
             <h1 className="text-3xl font-bold text-red-400">JARVIS Admin Panel</h1>
           </div>
-          <Button onClick={handleLogout} variant="outline" className="border-red-500/30 text-red-400">
+          <Button onClick={() => {
+            AdminAuthService.logout();
+            window.location.reload();
+          }} variant="outline" className="border-red-500/30 text-red-400">
             <LogOut className="h-4 w-4 mr-2" />
             Logout
           </Button>
@@ -345,7 +359,14 @@ const AdminApiKeyManager: React.FC = () => {
               <Key className="h-5 w-5 mr-2" />
               Database-Managed API Keys
             </CardTitle>
-            <Button onClick={handleCleanup} variant="outline" size="sm" className="border-orange-500/30 text-orange-400">
+            <Button onClick={async () => {
+              const removed = await SecureApiKeyService.cleanupInactiveKeys();
+              await loadData();
+              toast({
+                title: "Cleanup Complete",
+                description: `Removed ${removed} inactive API keys`
+              });
+            }} variant="outline" size="sm" className="border-orange-500/30 text-orange-400">
               <Trash2 className="h-4 w-4 mr-2" />
               Cleanup Inactive
             </Button>
@@ -372,7 +393,23 @@ const AdminApiKeyManager: React.FC = () => {
                         </div>
                         <div className="flex space-x-2">
                           <Button
-                            onClick={() => handleToggleKey(key.id, key.is_active)}
+                            onClick={async () => {
+                              const success = await SecureApiKeyService.updateApiKey(key.id, { is_active: !key.is_active });
+                              
+                              if (success) {
+                                await loadData();
+                                toast({
+                                  title: key.is_active ? "Key Deactivated" : "Key Activated",
+                                  description: `API key has been ${key.is_active ? 'deactivated' : 'activated'}`
+                                });
+                              } else {
+                                toast({
+                                  title: "Error",
+                                  description: "Failed to update API key",
+                                  variant: "destructive"
+                                });
+                              }
+                            }}
                             size="sm"
                             variant="outline"
                             className={`border-${key.is_active ? 'red' : 'green'}-500/30 text-${key.is_active ? 'red' : 'green'}-400`}
@@ -380,7 +417,25 @@ const AdminApiKeyManager: React.FC = () => {
                             {key.is_active ? 'Deactivate' : 'Activate'}
                           </Button>
                           <Button
-                            onClick={() => handleDeleteKey(key.id)}
+                            onClick={async () => {
+                              if (confirm('Are you sure you want to delete this API key?')) {
+                                const success = await SecureApiKeyService.deleteApiKey(key.id);
+                                
+                                if (success) {
+                                  await loadData();
+                                  toast({
+                                    title: "API Key Deleted",
+                                    description: "The API key has been removed from the system"
+                                  });
+                                } else {
+                                  toast({
+                                    title: "Error",
+                                    description: "Failed to delete API key",
+                                    variant: "destructive"
+                                  });
+                                }
+                              }
+                            }}
                             size="sm"
                             variant="outline"
                             className="border-red-500/30 text-red-400"
