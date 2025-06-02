@@ -48,6 +48,7 @@ function App() {
                   <Route path="/ghost" element={<JarvisV2Interface />} />
                   <Route path="/image-generation" element={<ImageGeneration />} />
                   <Route path="/images" element={<ImageGeneration />} />
+                  <Route path="/video-maker" element={<VideoMaker />} />
                   <Route path="/settings" element={<JarvisSettings />} />
                   <Route path="/admin" element={<AdminPanel />} />
                   <Route path="/features" element={<FeaturesOverview />} />
