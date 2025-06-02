@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -24,7 +23,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
     // Simulate loading time for security
     await new Promise(resolve => setTimeout(resolve, 800));
 
-    const success = AdminAuthService.login(username, password);
+    const success = await AdminAuthService.authenticate(username, password);
     
     if (success) {
       toast({
