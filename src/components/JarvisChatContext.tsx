@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useRef, useEffect } from "react";
 import { Message, MessageSuggestion, JarvisChatProps } from "@/types/chat";
 import { generateAssistantResponse, synthesizeSpeech } from "@/services/aiAssistantService";
@@ -13,6 +12,7 @@ interface JarvisChatContextType {
   messages: Message[];
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   sendMessage: (content: string, suggestions?: MessageSuggestion[]) => Promise<void>;
+  resetChat: () => void;
   isProcessing: boolean;
   suggestions: MessageSuggestion[];
   setSuggestions: React.Dispatch<React.SetStateAction<MessageSuggestion[]>>;
@@ -108,6 +108,57 @@ export const JarvisChatProvider: React.FC<React.PropsWithChildren<JarvisChatProp
           timestamp: new Date(),
         },
       ]);
+    }
+  };
+
+  const resetChat = async () => {
+    try {
+      // Clear messages from database for current user
+      if (user) {
+        const { error } = await supabase
+          .from('chat_messages')
+          .delete()
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+      }
+
+      // Reset local state
+      setMessages([
+        {
+          id: "welcome-message",
+          content: "Hello! I'm JARVIS, your AI assistant. How can I help you today?",
+          role: "assistant",
+          timestamp: new Date(),
+        },
+      ]);
+
+      setSuggestions([
+        {
+          id: "s1",
+          text: "What can you help me with?",
+        },
+        {
+          id: "s2",
+          text: "Generate an image for me",
+        },
+        {
+          id: "s3",
+          text: "What's the weather like today?",
+        },
+      ]);
+
+      toast({
+        title: "Chat Reset",
+        description: "Chat conversation has been reset successfully.",
+      });
+    } catch (error) {
+      console.error('Error resetting chat:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reset chat. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -342,6 +393,7 @@ export const JarvisChatProvider: React.FC<React.PropsWithChildren<JarvisChatProp
         messages,
         setMessages,
         sendMessage,
+        resetChat,
         isProcessing,
         suggestions,
         setSuggestions,
