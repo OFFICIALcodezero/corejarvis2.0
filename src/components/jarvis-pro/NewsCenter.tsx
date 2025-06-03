@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -54,7 +53,9 @@ const NewsCenter: React.FC = () => {
       const lastUpdatedData: {[key: string]: string} = {};
 
       data?.forEach(item => {
-        newsData[item.category] = item.data as NewsArticle[];
+        // Properly type cast the data from Json to NewsArticle[]
+        const articleData = item.data as unknown as NewsArticle[];
+        newsData[item.category] = Array.isArray(articleData) ? articleData : [];
         lastUpdatedData[item.category] = item.last_updated;
       });
 
@@ -191,12 +192,12 @@ const NewsCenter: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       const mockNews = generateMockNews(category);
       
-      // Update cache in Supabase
+      // Update cache in Supabase with proper JSON serialization
       const { error } = await supabase
         .from('jarvis_news_cache')
         .upsert({
           category,
-          data: mockNews as any,
+          data: JSON.parse(JSON.stringify(mockNews)),
           last_updated: new Date().toISOString()
         });
 
