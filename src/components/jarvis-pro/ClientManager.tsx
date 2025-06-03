@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Edit, Trash2, Phone, Mail, Building } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Phone, Mail, Building, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -289,7 +289,7 @@ const ClientManager: React.FC = () => {
       {filteredClients.length === 0 && (
         <Card className="bg-gray-800 border-gray-700">
           <CardContent className="text-center py-8">
-            <Users className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+            <User className="w-12 h-12 text-gray-600 mx-auto mb-4" />
             <p className="text-gray-400">
               {searchTerm ? 'No clients found matching your search.' : 'No clients yet. Add your first client to get started.'}
             </p>

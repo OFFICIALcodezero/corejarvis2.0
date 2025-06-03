@@ -196,7 +196,7 @@ const NewsCenter: React.FC = () => {
         .from('jarvis_news_cache')
         .upsert({
           category,
-          data: mockNews,
+          data: mockNews as any,
           last_updated: new Date().toISOString()
         });
 

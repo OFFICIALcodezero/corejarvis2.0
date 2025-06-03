@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Mail, Send, Reply, Archive, Inbox, Draft } from 'lucide-react';
+import { Plus, Mail, Send, Reply, Archive, Inbox, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -197,7 +197,7 @@ Your Assistant`;
                   onClick={() => setFormData({...formData, is_draft: true})}
                   className="flex items-center gap-2"
                 >
-                  <Draft className="w-4 h-4" />
+                  <FileText className="w-4 h-4" />
                   Save Draft
                 </Button>
               </div>
@@ -239,7 +239,7 @@ Your Assistant`;
           >
             {filterOption === 'all' && <Inbox className="w-4 h-4" />}
             {filterOption === 'unread' && <Mail className="w-4 h-4" />}
-            {filterOption === 'drafts' && <Draft className="w-4 h-4" />}
+            {filterOption === 'drafts' && <FileText className="w-4 h-4" />}
             {filterOption}
           </Button>
         ))}
