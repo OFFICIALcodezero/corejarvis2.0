@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useVideoMaker } from '@/contexts/VideoMakerContext';
 import { Download, Share2, Play, AlertCircle, FileVideo } from 'lucide-react';
@@ -16,35 +17,23 @@ const VideoExport: React.FC = () => {
   };
 
   const createVideoFile = async (): Promise<Blob> => {
-    // Create a sample video canvas and export as MP4
+    // Create a proper video using MediaRecorder with multiple frames
     const canvas = document.createElement('canvas');
     canvas.width = 1920;
     canvas.height = 1080;
     const ctx = canvas.getContext('2d');
     
-    if (ctx) {
-      // Create a simple gradient background
-      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-      gradient.addColorStop(0, '#8B5CF6');
-      gradient.addColorStop(1, '#3B82F6');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // Add JARVIS branding
-      ctx.fillStyle = 'white';
-      ctx.font = 'bold 48px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('JARVIS Video Export', canvas.width / 2, canvas.height / 2);
-      
-      ctx.font = '24px Arial';
-      ctx.fillText(`${selectedClips.length} clips • ${Math.round(getTotalDuration())}s duration`, canvas.width / 2, canvas.height / 2 + 60);
+    if (!ctx) {
+      throw new Error('Cannot create canvas context');
     }
+
+    // Create a stream from canvas
+    const stream = canvas.captureStream(30); // 30 FPS
+    const recorder = new MediaRecorder(stream, { 
+      mimeType: 'video/webm;codecs=vp9' 
+    });
     
-    // Convert canvas to video using MediaRecorder
-    const stream = canvas.captureStream(30);
-    const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
-    
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const chunks: BlobPart[] = [];
       
       recorder.ondataavailable = (event) => {
@@ -58,12 +47,65 @@ const VideoExport: React.FC = () => {
         resolve(blob);
       };
       
+      recorder.onerror = (event) => {
+        reject(new Error('Recording failed'));
+      };
+      
       recorder.start();
       
-      // Record for 2 seconds to create a sample video
-      setTimeout(() => {
-        recorder.stop();
-      }, 2000);
+      // Animate the canvas to create actual video content
+      let frame = 0;
+      const totalFrames = Math.floor(getTotalDuration() * 30); // 30 FPS
+      
+      const drawFrame = () => {
+        // Create animated background
+        const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        const hue = (frame * 2) % 360;
+        gradient.addColorStop(0, `hsl(${hue}, 70%, 50%)`);
+        gradient.addColorStop(1, `hsl(${(hue + 60) % 360}, 70%, 30%)`);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Add JARVIS branding with animation
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 64px Arial';
+        ctx.textAlign = 'center';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 10;
+        ctx.fillText('JARVIS VIDEO', canvas.width / 2, canvas.height / 2 - 50);
+        
+        // Animated subtitle
+        ctx.font = '32px Arial';
+        const opacity = 0.7 + 0.3 * Math.sin(frame * 0.1);
+        ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+        ctx.fillText(`${selectedClips.length} clips • ${Math.round(getTotalDuration())}s duration`, 
+                    canvas.width / 2, canvas.height / 2 + 50);
+        
+        // Progress indicator
+        const progress = frame / totalFrames;
+        const barWidth = 600;
+        const barHeight = 20;
+        const barX = (canvas.width - barWidth) / 2;
+        const barY = canvas.height / 2 + 150;
+        
+        // Progress bar background
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.fillRect(barX, barY, barWidth, barHeight);
+        
+        // Progress bar fill
+        ctx.fillStyle = `hsl(${hue}, 70%, 60%)`;
+        ctx.fillRect(barX, barY, barWidth * progress, barHeight);
+        
+        frame++;
+        
+        if (frame < totalFrames) {
+          requestAnimationFrame(drawFrame);
+        } else {
+          setTimeout(() => recorder.stop(), 100);
+        }
+      };
+      
+      drawFrame();
     });
   };
 
@@ -237,8 +279,9 @@ const VideoExport: React.FC = () => {
               <video 
                 src={exportedVideoUrl}
                 controls
+                autoPlay={false}
                 className="w-full h-auto rounded"
-                poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23000'/%3E%3Ctext x='200' y='150' text-anchor='middle' fill='%23fff' font-family='Arial' font-size='16'%3EJARVIS Video%3C/text%3E%3C/svg%3E"
+                preload="metadata"
               >
                 Your browser does not support the video tag.
               </video>
@@ -259,33 +302,7 @@ const VideoExport: React.FC = () => {
               <span>Download Video</span>
             </button>
             <button
-              onClick={() => {
-                if (navigator.share && exportedVideoUrl) {
-                  fetch(exportedVideoUrl)
-                    .then(res => res.blob())
-                    .then(blob => {
-                      const file = new File([blob], `jarvis-video-${Date.now()}.webm`, { type: 'video/webm' });
-                      return navigator.share({
-                        title: 'My Jarvis Video',
-                        text: 'Check out this video I created with Jarvis Video Maker!',
-                        files: [file],
-                      });
-                    })
-                    .catch(() => {
-                      navigator.clipboard.writeText(window.location.href);
-                      toast({
-                        title: "Link Copied",
-                        description: "Project link copied to clipboard!",
-                      });
-                    });
-                } else {
-                  navigator.clipboard.writeText(window.location.href);
-                  toast({
-                    title: "Link Copied",
-                    description: "Project link copied to clipboard!",
-                  });
-                }
-              }}
+              onClick={handleShare}
               className="flex-1 bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg flex items-center justify-center space-x-2 transition-colors"
             >
               <Share2 className="h-5 w-5" />

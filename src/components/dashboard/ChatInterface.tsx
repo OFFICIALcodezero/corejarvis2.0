@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -210,35 +211,6 @@ const ChatInterface: React.FC = () => {
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-blue-400">JARVIS Chat Interface</CardTitle>
         <div className="flex items-center gap-2">
-          {/* Voice Controls */}
-          {isSupported && (
-            <>
-              <Button
-                onClick={toggleVoiceListening}
-                disabled={loading}
-                variant="outline"
-                size="sm"
-                className={`border-blue-500/30 ${
-                  isListening 
-                    ? 'text-red-400 hover:bg-red-500/10' 
-                    : 'text-blue-400 hover:bg-blue-500/10'
-                }`}
-              >
-                {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-              </Button>
-              
-              <Button
-                onClick={isPlaying ? stopSpeaking : undefined}
-                disabled={!isPlaying}
-                variant="outline"
-                size="sm"
-                className="border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
-              >
-                {isPlaying ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-              </Button>
-            </>
-          )}
-          
           <Button
             onClick={resetChat}
             disabled={loading}
@@ -310,7 +282,7 @@ const ChatInterface: React.FC = () => {
           </div>
         )}
 
-        {/* Message Input */}
+        {/* Message Input with Voice Controls */}
         <form onSubmit={sendMessage} className="flex space-x-2">
           <Input
             value={newMessage}
@@ -319,6 +291,38 @@ const ChatInterface: React.FC = () => {
             className="flex-1 bg-gray-900/50 border-blue-500/30 text-white placeholder-gray-400"
             disabled={loading}
           />
+          
+          {/* Voice Controls near Send Button */}
+          {isSupported && (
+            <>
+              <Button
+                type="button"
+                onClick={toggleVoiceListening}
+                disabled={loading}
+                variant="outline"
+                size="icon"
+                className={`border-blue-500/30 ${
+                  isListening 
+                    ? 'text-red-400 hover:bg-red-500/10' 
+                    : 'text-blue-400 hover:bg-blue-500/10'
+                }`}
+              >
+                {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              </Button>
+              
+              <Button
+                type="button"
+                onClick={isPlaying ? stopSpeaking : undefined}
+                disabled={!isPlaying}
+                variant="outline"
+                size="icon"
+                className="border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
+              >
+                {isPlaying ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+              </Button>
+            </>
+          )}
+          
           <Button 
             type="submit" 
             disabled={loading || (!newMessage.trim() && !currentTranscript.trim())}
