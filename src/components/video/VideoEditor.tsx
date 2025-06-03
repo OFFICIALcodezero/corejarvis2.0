@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useVideoMaker } from '@/contexts/VideoMakerContext';
-import { Edit, Type, Zap, Clock } from 'lucide-react';
+import { Edit, Type, Zap, Clock, Plus, Minus } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
 const VideoEditor: React.FC = () => {
@@ -22,6 +22,21 @@ const VideoEditor: React.FC = () => {
 
   const getVideoThumbnail = (clip: any) => {
     return clip.video.video_pictures?.[0]?.picture || '/placeholder.svg';
+  };
+
+  const adjustDuration = (clipId: string, adjustment: number) => {
+    const clip = selectedClips.find(c => c.id === clipId);
+    if (!clip) return;
+
+    const currentDuration = clip.endTime - clip.startTime;
+    const newDuration = Math.max(1, Math.min(currentDuration + adjustment, clip.video.duration - clip.startTime));
+    const newEndTime = clip.startTime + newDuration;
+
+    updateClip(clipId, { endTime: newEndTime });
+    toast({
+      title: "Duration Updated",
+      description: `Clip duration adjusted by ${adjustment > 0 ? '+' : ''}${adjustment}s`,
+    });
   };
 
   if (selectedClips.length === 0) {
@@ -59,6 +74,31 @@ const VideoEditor: React.FC = () => {
                   {clip.speed !== 1 && ` • Speed: ${clip.speed}x`}
                   {clip.textOverlay && ` • Text: "${clip.textOverlay}"`}
                 </div>
+              </div>
+              
+              {/* Quick Duration Controls */}
+              <div className="flex items-center space-x-1">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    adjustDuration(clip.id, -1);
+                  }}
+                  className="p-1 bg-red-600/50 hover:bg-red-600/70 rounded text-white text-xs flex items-center"
+                  title="Decrease duration by 1s"
+                >
+                  <Minus className="h-3 w-3" />
+                </button>
+                <span className="text-xs px-2">{Math.round(clip.endTime - clip.startTime)}s</span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    adjustDuration(clip.id, 1);
+                  }}
+                  className="p-1 bg-green-600/50 hover:bg-green-600/70 rounded text-white text-xs flex items-center"
+                  title="Increase duration by 1s"
+                >
+                  <Plus className="h-3 w-3" />
+                </button>
               </div>
             </div>
           ))}
@@ -106,6 +146,40 @@ const VideoEditor: React.FC = () => {
                     onChange={(e) => handleClipUpdate({ endTime: parseFloat(e.target.value) })}
                     className="w-full bg-black/20 border border-gray-600 rounded px-3 py-2 text-white"
                   />
+                </div>
+
+                {/* Quick Duration Adjustment */}
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Quick Duration Adjustment</label>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => adjustDuration(selectedClip.id, -5)}
+                      className="px-3 py-1 bg-red-600/50 hover:bg-red-600/70 rounded text-white text-sm"
+                    >
+                      -5s
+                    </button>
+                    <button
+                      onClick={() => adjustDuration(selectedClip.id, -1)}
+                      className="px-3 py-1 bg-red-600/50 hover:bg-red-600/70 rounded text-white text-sm"
+                    >
+                      -1s
+                    </button>
+                    <span className="px-3 py-1 bg-gray-700 rounded text-white text-sm min-w-[60px] text-center">
+                      {Math.round(selectedClip.endTime - selectedClip.startTime)}s
+                    </span>
+                    <button
+                      onClick={() => adjustDuration(selectedClip.id, 1)}
+                      className="px-3 py-1 bg-green-600/50 hover:bg-green-600/70 rounded text-white text-sm"
+                    >
+                      +1s
+                    </button>
+                    <button
+                      onClick={() => adjustDuration(selectedClip.id, 5)}
+                      className="px-3 py-1 bg-green-600/50 hover:bg-green-600/70 rounded text-white text-sm"
+                    >
+                      +5s
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
