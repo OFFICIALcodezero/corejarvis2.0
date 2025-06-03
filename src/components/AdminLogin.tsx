@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -20,28 +21,41 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate loading time for security
-    await new Promise(resolve => setTimeout(resolve, 800));
+    console.log('Login attempt for username:', username);
 
-    const success = await AdminAuthService.authenticate(username, password);
-    
-    if (success) {
+    try {
+      // Simulate loading time for security
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      const success = await AdminAuthService.authenticate(username, password);
+      
+      if (success) {
+        console.log('Login successful');
+        toast({
+          title: "Admin Access Granted",
+          description: "Welcome to JARVIS Admin Panel",
+        });
+        onLoginSuccess();
+      } else {
+        console.log('Login failed');
+        toast({
+          title: "Access Denied",
+          description: "Invalid credentials. Use 'admin' / 'admin123' for demo access.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Login error:', error);
       toast({
-        title: "Admin Access Granted",
-        description: "Welcome to JARVIS Admin Panel",
-      });
-      onLoginSuccess();
-    } else {
-      toast({
-        title: "Access Denied",
-        description: "Invalid credentials. Please try again.",
+        title: "Authentication Error",
+        description: "An error occurred during authentication. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
+      // Clear password field for security
+      setPassword('');
     }
-    
-    setIsLoading(false);
-    setUsername('');
-    setPassword('');
   };
 
   return (
@@ -53,6 +67,9 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
           </div>
           <CardTitle className="text-red-400 text-2xl">JARVIS Admin Access</CardTitle>
           <p className="text-gray-400">Restricted Area - Authorized Personnel Only</p>
+          <div className="text-xs text-gray-500 mt-2 p-2 bg-gray-800/50 rounded">
+            Demo Credentials: admin / admin123
+          </div>
         </CardHeader>
         
         <CardContent>
@@ -65,6 +82,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="bg-gray-900/50 border-red-500/30 text-white"
+                placeholder="Enter username"
                 required
                 disabled={isLoading}
               />
@@ -78,6 +96,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="bg-gray-900/50 border-red-500/30 text-white"
+                placeholder="Enter password"
                 required
                 disabled={isLoading}
               />
